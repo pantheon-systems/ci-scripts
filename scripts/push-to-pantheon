@@ -111,7 +111,9 @@ then
     INSTALL_SITE=true
   else
     # Maintain existing Pantheon settings.php file.
-    cp $HOME/pantheon/sites/default/default.settings.php sites/default/settings.php
+    chmod +w sites/default
+    chmod +w sites/default/settings.php
+    cp $HOME/pantheon/sites/default/settings.php sites/default/settings.php
   fi
 
   # Push our built files up to Pantheon
