@@ -1,0 +1,63 @@
+{
+    "name": "myorg/mysite",
+    "description": "Composer file for http://mysite.org website.",
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "http://packagist.drupal-composer.org/"
+        },
+
+        {
+            "type": "package",
+            "package": {
+                "name": "pantheon-systems/drops-7",
+                "version": "7.37",
+                "source": {
+                    "url": "https://github.com/pantheon-systems/drops-7.git",
+                    "type": "git",
+                    "reference": "master"
+                }
+            }
+        }
+    ],
+    "require": {
+        "davidbarratt/custom-installer": "dev-master",
+        "derhasi/composer-preserve-paths": "0.1.*",
+        "pantheon-systems/drops-7": "7.*",
+        "drupal/composer_vendor": "7.1.*",
+        "drupal/admin_menu": "7.3.*",
+        "drupal/devel": "7.1.*",
+        "drupal/responsive_bartik": "7.1.*"
+    },
+    "require-dev": {
+        "pantheon-systems/travis-scripts": "1.*"
+    },
+    "config": {
+        "bin-dir": "bin/",
+        "vendor-dir": "htdocs/sites/all/vendor"
+    },
+    "extra": {
+        "custom-installer": {
+            "drupal-module": "htdocs/sites/all/modules/contrib/{$name}/",
+            "drupal-theme": "htdocs/sites/all/themes/contrib/{$name}/",
+            "drupal-library": "htdocs/sites/all/libraries/{$name}/",
+            "drupal-drush": "htdocs/sites/all/drush/{$name}/",
+            "drupal-profile": "htdocs/profiles/{$name}/",
+            "drupal-core": "htdocs/"
+        },
+        "preserve-paths": [
+            "htdocs/sites/all/modules/contrib",
+            "htdocs/sites/all/modules/custom",
+            "htdocs/sites/all/modules/modified",
+            "htdocs/sites/all/themes/contrib",
+            "htdocs/sites/all/themes/custom",
+            "htdocs/sites/all/libraries",
+            "htdocs/sites/all/drush",
+            "htdocs/sites/all/vendor",
+            "htdocs/sites/default/settings.php",
+            "htdocs/sites/default/files"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
