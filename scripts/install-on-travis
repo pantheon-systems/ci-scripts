@@ -9,6 +9,12 @@ mkdir -p "$HOME/.drush"
 cat << __EOF__ > "$HOME/.drush/policy.drush.inc"
 <?php
 
+function policy_drush_sitealias_alter(&\$alias_record) {
+  // Fix pantheon aliases!
+  if (isset(\$alias_record['remote-host']) && (substr(\$alias_record['remote-host'], 0, 10) == 'appserver.')) {
+    \$alias_record['path-aliases']['%drush-script'] = 'drush6';
+  }
+}
 __EOF__
 
 # Run composer install to install Drupal (pantheon-systems/drops-7),
