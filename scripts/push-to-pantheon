@@ -99,9 +99,9 @@ then
 
   # If there is no settings.php file, then we will create one.
   INSTALL_SITE=false
-  if [ ! -f sites/default/settings.php ]
+  if [ ! -f $HOME/pantheon/sites/default/settings.php ]
   then
-    sed -e 's/^$databases/# $databases/' sites/default/default.settings.php > sites/default/settings.php
+    sed -e 's/^$databases/# $databases/' $HOME/pantheon/sites/default/default.settings.php > sites/default/settings.php
     aborterr "Could not create settings.php with default.settings.php."
     # settings.php is excluded by our .gitignore, but
     # we need one on Pantheon in order to use drush si,
@@ -109,6 +109,9 @@ then
     git add -f sites/default/settings.php
     aborterr "Could not add settings.php"
     INSTALL_SITE=true
+  else
+    # Maintain existing Pantheon settings.php file.
+    cp $HOME/pantheon/sites/default/default.settings.php sites/default/settings.php
   fi
 
   # Push our built files up to Pantheon
