@@ -85,6 +85,8 @@ after_failure:
   - if [ -f $HOME/server.log ] ; then echo "Server log:" && cat $HOME/server.log ; fi
 
 after_script:
+  # Kill our webserver, if it is running.
+  - PID=$(ps auxw | grep '127.0.0.1[:]8088' | awk '{ print $2; }'); if [ -n "$PID" ] ; then kill -9 $PID; fi
   - rm $HOME/server.log
 
 notifications:
