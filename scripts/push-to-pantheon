@@ -76,6 +76,10 @@ then
   PUUID=$(terminus site info --site="$PSITE" --field=id)
   aborterr "Could not get UUID for $PSITE"
 
+  # Make sure we are in git mode
+  terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
+  check "Changed connection mode to 'git' for $PSITE $PENV environment" "Could not change connection mode to 'git' for $PSITE $PENV environment"
+
   # Identify the automation user
   git config --global user.email "bot@westkingdom.org"
   git config --global user.name "West Kingdom Automation"
@@ -89,37 +93,28 @@ then
   mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/htdocs
   cd $TRAVIS_BUILD_DIR/htdocs
 
-  # Overwrite the existing settings.php file with a new empty settings
-  # file based on default.settings.php.  We do this because the site-install
-  # command will set the permissions on the settings.php file to make it
-  # unwritable.  If we later try to run site-install again, it will fail
-  # because of this.  Overwriting the file will cause git to reset the
-  # permissions to writable when the file is pulled on Pantheon.
-  # We also comment out the assignment to $databases, so that our settings.php
-  # file will never override the database configuratoin provided by Pantheon.
-  chmod 775 sites/default
-  aborterr "Could not chmod sites/default."
-  chmod 664 sites/default/settings.php
-  aborterr "Could not chmod old sites/default/settings.php."
-  sed -e 's/^$databases/# $databases/' sites/default/default.settings.php > sites/default/settings.php
-  aborterr "Could not overwrite old settings with the default settings file."
-
   # Output of the diff vs upstream.
   echo "Here's the status change!"
   git status
 
-  # Make sure we are in git mode
-  terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
-  check "Changed connection mode to 'git' for $PSITE $PENV environment" "Could not change connection mode to 'git' for $PSITE $PENV environment"
+  # If there is no settings.php file, then we will create one.
+  INSTALL_SITE=false
+  if [ ! -f sites/default/settings.php ]
+  then
+    sed -e 's/^$databases/# $databases/' sites/default/default.settings.php > sites/default/settings.php
+    aborterr "Could not create settings.php with default.settings.php."
+    # settings.php is excluded by our .gitignore, but
+    # we need one on Pantheon in order to use drush si,
+    # so we will add it with `git add -f`.
+    git add -f sites/default/settings.php
+    aborterr "Could not add settings.php"
+    INSTALL_SITE=true
+  fi
 
   # Push our built files up to Pantheon
   git add --all
   aborterr "'git add --all' failed"
-  # We also need to add settings.php.  It is excluded by our .gitignore, but
-  # we need one on Pantheon in order to use drush si.
-  git add -f sites/default/settings.php
-  aborterr "Could not add settings.php"
-  git commit -a -m "Makefile build by CI: '$TRAVIS_COMMIT_MSG'"
+  git commit -a -m "Built by CI: '$TRAVIS_COMMIT_MSG'"
   aborterr "'git commit' failed"
   git push origin master
   aborterr "'git push' failed"
@@ -129,18 +124,20 @@ then
   echo "Drush status on the remote site:"
   drush --strict=0 @pantheon.$PSITE.$PENV status
 
-  # Check to see if there is already a site installed on the specified environment
-  BOOTSTRAPPED=$(drush  --strict=0 @pantheon.$PSITE.$PENV status "Drupal bootstrap")
-  aborterr "Could not look up status of $PSITE on Pantheon"
-  if [ -z "$BOOTSTRAPPED" ]
+  # If we created a settings.php file, then run 'site install'
+  if $INSTALL_SITE
   then
     # We need to go back to sftp mode to run site-install
     terminus site connection-mode --site="$PSITE" --env="$PENV" --set=sftp
     check "Changed connection mode to 'sftp' for $PSITE $PENV environment" "Could not change connection mode to 'sftp' for $PSITE $PENV environment"
-    # Wipe the site before running site-install
-    terminus site wipe --site="$PSITE" --env="$PENV"
     # Create a new site with site-install.
     drush --strict=0 @pantheon.$PSITE.$PENV -y site-install standard --site-name="$SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
+    aborterr "Could not install Drupal on Pantheon test site"
+    # Commit the modification made to settings.php and switch back to git mode
+    terminus site code commit --site="$PSITE" --env="$PENV" --message="Settings.php modifications made by site-install"
+    aborterr "Could not commit settings.php changes"
+    terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
+    aborterr "Could not switch back to git mode"
     # Because the site password is in the log, generate a new random
     # password for the site, and change it.  The site owner can use
     # `drush uli` to log in.
