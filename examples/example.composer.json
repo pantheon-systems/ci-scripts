@@ -38,28 +38,28 @@
     },
     "config": {
         "bin-dir": "bin/",
-        "vendor-dir": "htdocs/sites/all/vendor"
+        "vendor-dir": "drupal/sites/all/vendor"
     },
     "extra": {
         "custom-installer": {
-            "drupal-module": "htdocs/sites/all/modules/contrib/{$name}/",
-            "drupal-theme": "htdocs/sites/all/themes/contrib/{$name}/",
-            "drupal-library": "htdocs/sites/all/libraries/{$name}/",
-            "drupal-drush": "htdocs/sites/all/drush/{$name}/",
-            "drupal-profile": "htdocs/profiles/{$name}/",
-            "drupal-core": "htdocs/"
+            "drupal-module": "drupal/sites/all/modules/contrib/{$name}/",
+            "drupal-theme": "drupal/sites/all/themes/contrib/{$name}/",
+            "drupal-library": "drupal/sites/all/libraries/{$name}/",
+            "drupal-drush": "drupal/sites/all/drush/{$name}/",
+            "drupal-profile": "drupal/profiles/{$name}/",
+            "drupal-core": "drupal/"
         },
         "preserve-paths": [
-            "htdocs/sites/all/modules/contrib",
-            "htdocs/sites/all/modules/custom",
-            "htdocs/sites/all/modules/modified",
-            "htdocs/sites/all/themes/contrib",
-            "htdocs/sites/all/themes/custom",
-            "htdocs/sites/all/libraries",
-            "htdocs/sites/all/drush",
-            "htdocs/sites/all/vendor",
-            "htdocs/sites/default/settings.php",
-            "htdocs/sites/default/files"
+            "drupal/sites/all/modules/contrib",
+            "drupal/sites/all/modules/custom",
+            "drupal/sites/all/modules/modified",
+            "drupal/sites/all/themes/contrib",
+            "drupal/sites/all/themes/custom",
+            "drupal/sites/all/libraries",
+            "drupal/sites/all/drush",
+            "drupal/sites/all/vendor",
+            "drupal/sites/default/settings.php",
+            "drupal/sites/default/files"
         ]
     },
     "minimum-stability": "dev",

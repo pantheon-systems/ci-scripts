@@ -113,22 +113,22 @@ __EOF__
   git clone --depth 1 "$REPO" $HOME/pantheon
   check "git clone successful" "Could not clone repository from $REPO"
   # Get rid of any .git directories created by composer
-  rm -rf $(find $TRAVIS_BUILD_DIR/htdocs -name ".git")
+  rm -rf $(find $TRAVIS_BUILD_DIR/drupal -name ".git")
   # Move the .git directory we checked out on top of the files we built.
   # This is functionally equivalent to copying the built files over the
   # checked-out repository, except more efficient.
-  mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/htdocs
+  mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/drupal
 
   # Use our .gitignore file from our source repository to build
   # a .gitattributes file in our Pantheon repository.  Anything
-  # inside of 'htdocs' that is ignored in the source repository is
+  # inside of 'drupal' that is ignored in the source repository is
   # ignored because it is a built target.  We want to also ignore
   # the same set of files when making diffs on the Pantheon repository,
   # to avoid large diffs full of uninteresting changes.
-  grep htdocs $TRAVIS_BUILD_DIR/.gitignore | sed -e 's#htdocs/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > $TRAVIS_BUILD_DIR/htdocs/.gitattributes
+  grep drupal $TRAVIS_BUILD_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > $TRAVIS_BUILD_DIR/drupal/.gitattributes
 
   # Output of the diff vs upstream.
-  cd $TRAVIS_BUILD_DIR/htdocs
+  cd $TRAVIS_BUILD_DIR/drupal
   echo "Here's the status change!"
   git status
 

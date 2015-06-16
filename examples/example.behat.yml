@@ -21,4 +21,4 @@ default:
       drush:
         alias: 'local'
       drupal:
-        drupal_root: './htdocs'
+        drupal_root: './drupal'

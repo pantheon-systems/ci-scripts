@@ -19,12 +19,12 @@ PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
 
 # Fix bug in our custom installer
-if [ -d $PROJECT_BASE_DIR/htdocs/sites/sites/default ]
+if [ -d $PROJECT_BASE_DIR/drupal/sites/sites/default ]
 then
-  mv $PROJECT_BASE_DIR/htdocs/sites/sites/default $PROJECT_BASE_DIR/htdocs/sites/default
+  mv $PROJECT_BASE_DIR/drupal/sites/sites/default $PROJECT_BASE_DIR/drupal/sites/default
 fi
 
-if [ ! -f $PROJECT_BASE_DIR/htdocs/sites/default/default.settings.php ]
+if [ ! -f $PROJECT_BASE_DIR/drupal/sites/default/default.settings.php ]
 then
   echo "No default.settings.php file; did you run composer install?"
   exit 1
@@ -32,10 +32,10 @@ fi
 
 # Do the settings.php shuffle for an empty settings.php
 # This prevents permissions issues with the sites/default directory
-cp $PROJECT_BASE_DIR/htdocs/sites/default/default.settings.php $PROJECT_BASE_DIR/htdocs/sites/default/settings.php
+cp $PROJECT_BASE_DIR/drupal/sites/default/default.settings.php $PROJECT_BASE_DIR/drupal/sites/default/settings.php
 
 # Use Drush to install Drupal and spin up PHP's built-in webserver
-cd $PROJECT_BASE_DIR/htdocs
+cd $PROJECT_BASE_DIR/drupal
 drush site-install -y standard --site-name="$SITE_NAME Travis Test Site" --db-url=mysql://root@localhost/drupal --account-name=admin --account-pass=admin
 if [ $? != 0 ]
 then
