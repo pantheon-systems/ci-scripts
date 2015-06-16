@@ -59,8 +59,7 @@ install:
 
 before_script:
   # Set the 'sendmail_path' to point to the program 'true'; this
-  # will cause the system to essentially swallow any emails Drupal
-  # tries to send.
+  # will cause the system to discard any emails Drupal tries to send.
   - echo "sendmail_path='true'" >> `php --ini | grep "Loaded Configuration" | awk '{print $4}'`
 
 script:
@@ -85,8 +84,7 @@ after_failure:
   - if [ -f $HOME/server.log ] ; then echo "Server log:" && cat $HOME/server.log ; fi
 
 after_script:
-  # Kill our webserver, if it is running.
-  - PID=$(ps auxw | grep '127.0.0.1[:]8088' | awk '{ print $2; }'); if [ -n "$PID" ] ; then kill -9 $PID; fi
+  - bin/stop-webserver
   - rm $HOME/server.log
 
 notifications:

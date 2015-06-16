@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Get the process ID of our webserver
+PID=$(ps auxw | grep '127.0.0.1[:]8088' | awk '{ print $2; }');
+
+# Kill our webserver, if it is running.
+if [ -n "$PID" ]
+then
+  kill -9 $PID
+fi

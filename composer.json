@@ -12,6 +12,7 @@
     },
     "bin": [
         "scripts/push-to-pantheon",
-        "scripts/setup-before-tests"
+        "scripts/setup-before-tests",
+        "scripts/stop-webserver"
     ]
 }
