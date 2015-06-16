@@ -20,7 +20,7 @@ Copy the contents of the `examples` directory to the root of your project, renam
 ```
 You must customize the contents of these files to suit the needs of your project.
 
-### Composer
+#### Composer
 
 Set the **name** and **description** in your composer.json file to something appropriate for your project.  
 
@@ -28,7 +28,7 @@ Customize the **require** section to contain the modules and themes needed for y
 
 The **require-dev** section contains the components needed by this project (including a reference to this project itself as the first item).  If you alter any of the selections here, you will fundamentally alter the way these scripts operate; only do this if you really understand all of the implications.
 
-### Travis
+#### Travis
 
 Define the environment variables that identify your site in the **global** section of your .travis.yml **env**.  See the comments in the file for instructions, especially for the encrypted environment variables and encrypted private key file.  The encrypted items are only necessary if you want to push your site to Pantheon after every successful test run.
 
@@ -36,7 +36,7 @@ The other parts of the example .travis.yml file should run without modification.
 
 See the [Travis documentation](http://docs.travis-ci.com/user/getting-started/) to set up GitHub integration, so that your code will be automatically tested on every commit.
 
-### Behat
+#### Behat
 
 This sample is set up to run a single behat test that confirms that the name of the site was set correctly by `drush site-install`.  Note that the first part of the site name is set by the `SITE_NAME` environment variable that you customize in your .travis.yml file; the second part of the site name is set to `Travis Test Site` on Travis, and `Pantheon Test Site` on Pantheon.
 
