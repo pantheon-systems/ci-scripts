@@ -113,6 +113,14 @@ __EOF__
   # checked-out repository, except more efficient.
   mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/htdocs
 
+  # Use our .gitignore file from our source repository to build
+  # a .gitattributes file in our Pantheon repository.  Anything
+  # inside of 'htdocs' that is ignored in the source repository is
+  # ignored because it is a built target.  We want to also ignore
+  # the same set of files when making diffs on the Pantheon repository,
+  # to avoid large diffs full of uninteresting changes.
+  grep htdocs $TRAVIS_BUILD_DIR/.gitignore | sed -e 's#htdocs/\(.*\)#\1 -diff#' > $TRAVIS_BUILD_DIR/.gitattributes
+
   # Output of the diff vs upstream.
   cd $TRAVIS_BUILD_DIR/htdocs
   echo "Here's the status change!"
