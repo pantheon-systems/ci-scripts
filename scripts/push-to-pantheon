@@ -119,7 +119,7 @@ __EOF__
   # ignored because it is a built target.  We want to also ignore
   # the same set of files when making diffs on the Pantheon repository,
   # to avoid large diffs full of uninteresting changes.
-  grep htdocs $TRAVIS_BUILD_DIR/.gitignore | sed -e 's#htdocs/\(.*\)#\1 -diff#' > $TRAVIS_BUILD_DIR/.gitattributes
+  grep htdocs $TRAVIS_BUILD_DIR/.gitignore | sed -e 's#htdocs/\(.*\)#\1 -diff#' > $TRAVIS_BUILD_DIR/htdocs/.gitattributes
 
   # Output of the diff vs upstream.
   cd $TRAVIS_BUILD_DIR/htdocs
