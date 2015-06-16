@@ -34,8 +34,20 @@ Define the environment variables that identify your site in the **global** secti
 
 The other parts of the example .travis.yml file should run without modification.  Note that the scripts run from the `bin` directory come from either the `scripts` directory of this project (which are copied to the `bin` directory when you require "pantheon-systems/travis-scripts" in your project's composer.json), or from some other component **require-dev** (e.g. behat).
 
+See the [Travis documentation](http://docs.travis-ci.com/user/getting-started/) to set up GitHub integration, so that your code will be automatically tested on every commit.
+
 ### Behat
 
 This sample is set up to run a single behat test that confirms that the name of the site was set correctly by `drush site-install`.  Note that the first part of the site name is set by the `SITE_NAME` environment variable that you customize in your .travis.yml file; the second part of the site name is set to `Travis Test Site` on Travis, and `Pantheon Test Site` on Pantheon.
 
 See the [behat documentation](http://docs.behat.org/en/latest/) for further instructions on adding more tests to your project.
+
+## Local Testing
+
+Once setup is complete, doing local testing is a simple matter of:
+```
+$ composer install
+$ ./bin/setup-before-tests
+$ ./bin/behat
+$ ./bin/stop-webserver
+```
