@@ -30,7 +30,7 @@
         "drupal/responsive_bartik": "7.1.*"
     },
     "require-dev": {
-        "pantheon-systems/travis-scripts": "1.*"
+        "pantheon-systems/travis-scripts": "0.*"
     },
     "config": {
         "bin-dir": "bin/",
