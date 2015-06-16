@@ -51,10 +51,26 @@ then
   # that we mean to connect to an unknown host. We ignore those here.
   echo "StrictHostKeyChecking no" > ~/.ssh/config
 
+  # Create a local policy file that specifies the version of Drush that
+  # Travis should use when running Drush commands remotely on Pantheon.
+  # n.b. we still want to use drush8 for Drupal 8 sites
+  mkdir -p "$HOME/.drush"
+  cat << __EOF__ > "$HOME/.drush/policy.drush.inc"
+<?php
+
+function policy_drush_sitealias_alter(&\$alias_record) {
+  // Fix pantheon aliases!
+  if (isset(\$alias_record['remote-host']) && (substr(\$alias_record['remote-host'], 0, 10) == 'appserver.')) {
+    \$alias_record['path-aliases']['%drush-script'] = 'drush6';
+  }
+}
+__EOF__
+
   # Capture the commit message
   export TRAVIS_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
 
   # Install Terminus
+  mkdir -p $HOME/bin
   curl https://github.com/pantheon-systems/cli/releases/download/0.5.5/terminus.phar -L -o $HOME/bin/terminus
   chmod +x $HOME/bin/terminus
 

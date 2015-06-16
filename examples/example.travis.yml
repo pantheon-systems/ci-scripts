@@ -55,7 +55,7 @@ before_install:
 
 
 install:
-  - bash bin/install-on-travis
+  - composer install
 
 before_script:
   # Set the 'sendmail_path' to point to the program 'true'; this
