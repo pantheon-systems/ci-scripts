@@ -106,9 +106,12 @@ __EOF__
   REPO="ssh://codeserver.dev.$PUUID@codeserver.dev.$PUUID.drush.in:2222/~/repository.git"
   git clone --depth 1 "$REPO" $HOME/pantheon
   check "git clone successful" "Could not clone repository from $REPO"
-  mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/htdocs
   # Get rid of any .git directories created by composer
-  find $TRAVIS_BUILD_DIR/htdocs -name ".git" -exec rm -rf {} \;
+  rm -rf $(find $TRAVIS_BUILD_DIR/htdocs -name ".git")
+  # Move the .git directory we checked out on top of the files we built.
+  # This is functionally equivalent to copying the built files over the
+  # checked-out repository, except more efficient.
+  mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/htdocs
 
   # Output of the diff vs upstream.
   cd $TRAVIS_BUILD_DIR/htdocs
