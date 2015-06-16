@@ -11,7 +11,6 @@
         "phpunit/phpunit": ">=3.5"
     },
     "bin": [
-        "scripts/install-on-travis",
         "scripts/push-to-pantheon",
         "scripts/setup-before-tests"
     ]
