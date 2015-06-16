@@ -107,9 +107,11 @@ __EOF__
   git clone --depth 1 "$REPO" $HOME/pantheon
   check "git clone successful" "Could not clone repository from $REPO"
   mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/htdocs
-  cd $TRAVIS_BUILD_DIR/htdocs
+  # Get rid of any .git directories created by composer
+  find $TRAVIS_BUILD_DIR/htdocs -name ".git" -exec rm -rf {} \;
 
   # Output of the diff vs upstream.
+  cd $TRAVIS_BUILD_DIR/htdocs
   echo "Here's the status change!"
   git status
 
