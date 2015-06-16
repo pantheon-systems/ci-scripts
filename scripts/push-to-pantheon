@@ -41,6 +41,12 @@ function check() {
 # Add vendor/bin and $HOME/bin to our $PATH
 export PATH="$TRAVIS_BUILD_DIR/bin:$HOME/bin:$PATH"
 
+# If Drush version is not specified, then default to Drush 6
+if [ -z "$DRUSH_VERSION" ]
+then
+  DRUSH_VERSION=6
+fi
+
 # Do not attempt to push the site up to Pantheon unless the PPASS
 # environment variable is set.  If we receive a PR from an external
 # repository, then the secure environment variables will not be set;
@@ -61,7 +67,7 @@ then
 function policy_drush_sitealias_alter(&\$alias_record) {
   // Fix pantheon aliases!
   if (isset(\$alias_record['remote-host']) && (substr(\$alias_record['remote-host'], 0, 10) == 'appserver.')) {
-    \$alias_record['path-aliases']['%drush-script'] = 'drush6';
+    \$alias_record['path-aliases']['%drush-script'] = 'drush$DRUSH_VERSION';
   }
 }
 __EOF__
