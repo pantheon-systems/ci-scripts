@@ -134,6 +134,7 @@ __EOF__
 
   # If there is no settings.php file, then we will create one.
   INSTALL_SITE=false
+  chmod +w sites/default
   if [ ! -f $HOME/pantheon/sites/default/settings.php ]
   then
     cp -f $HOME/pantheon/sites/default/default.settings.php sites/default/settings.php
@@ -146,7 +147,6 @@ __EOF__
     INSTALL_SITE=true
   else
     # Maintain existing Pantheon settings.php file.
-    chmod +w sites/default
     chmod +w sites/default/settings.php
     cp $HOME/pantheon/sites/default/settings.php sites/default/settings.php
   fi
