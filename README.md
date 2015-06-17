@@ -37,6 +37,20 @@ The **require-dev** section contains the components needed by this project (incl
 
 Define the environment variables that identify your site in the **global** section of your .travis.yml **env**.  See the comments in the file for instructions, especially for the encrypted environment variables and encrypted private key file.  The encrypted items are only necessary if you want to push your site to Pantheon after every successful test run.
 
+You will need to set up your repository to be tested by Travis in order to encrypt your Travis API key.
+
+* Log in to https://travis-ci.org in your web browser 
+* Click on the "+" next to "My Repositories"
+* Find the repository you would like to configure to test. Navigate to the right organization, if necessary, and click "sync" if the repository was created recently.
+* Enable the repository by clicking on the checkbox next to it.
+# Push a commit to your repository to start a build.
+* [Add an ssh key to your Pantheon account](https://pantheon.io/docs/articles/users/loading-ssh-keys/). You may use the same private key that you use with GitHub, if you wish.
+* [Encrypt your private key for Travis](http://docs.travis-ci.com/user/encrypting-files/).
+  * Name your private key `travis-ci-key`, and place it at the base of your project (this file is already in the starting .gitignore file).
+  * Create your encrypted key with `cd travis && travis encrypt-file travis-ci-key`.
+  * Copy the `openssl` line output by `travis encrypt-file` into your .travis.yml file, replacing the `openssl` line that already exists in the **after_success** section.
+  * Commit the generated travis-ci-key.enc and all changes to your .travis.yml file.
+
 The other parts of the example .travis.yml file should run without modification.  Note that the scripts run from the `bin` directory come from either the `scripts` directory of this project (which are copied to the `bin` directory when you require "pantheon-systems/travis-scripts" in your project's composer.json), or from some other component **require-dev** (e.g. behat).
 
 See the [Travis documentation](http://docs.travis-ci.com/user/getting-started/) to set up GitHub integration, so that your code will be automatically tested on every commit.
