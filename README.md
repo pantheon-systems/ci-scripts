@@ -52,7 +52,5 @@ See the [behat documentation](http://docs.behat.org/en/latest/) for further inst
 Once setup is complete, doing local testing is a simple matter of:
 ```
 $ composer install
-$ ./bin/setup-before-tests
-$ ./bin/behat
-$ ./bin/stop-webserver
+$ ./bin/local-test
 ```

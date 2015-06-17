@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Usage:
+#
+#   ./bin/local-test
+#
+# Installs a local Drupal site, runs it with `drush runserver`, executes
+# the behat tests, and then stops the webserver.
+#
+SELF_DIRNAME="`dirname -- "$0"`"
+
+$SELF_DIRNAME/setup-before-tests
+$SELF_DIRNAME/behat
+$SELF_DIRNAME/stop-webserver
