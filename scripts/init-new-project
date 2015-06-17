@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#
+# Usage:
+#
+#   ./bin/init-new-project
+#
+# We do -not- expect this script to be called from the 'scripts' directory
+# of the pantheon-systems/travis-scripts project.  Rather, it is our
+# expectation that the user has 'require'd travis-scripts from their
+# project's composer.json file.  Thus, `composer install` will have copied
+# this script into the project's 'bin' directory.  We will test this
+# assumption and fail with an error if the script is being called incorrectly.
+#
+# See the README.md for more information.
+#
+
+# Find the project base directory, where this script was executed from.
+SELF_DIRNAME="`dirname -- "$0"`"
+
+# The project base dir is the immediate parent of the 'bin' dir
+PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
+
+# We expect that pantheon-systems/travis-scripts is in the project's
+# composer.json file, and that therefore we should be able to find
+# the 'examples' directory in VENDOR/pantheon-systems/travis-scripts/examples.
+VENDOR_DIR="$PROJECT_BASE_DIR/drupal/sites/all/vendor"
+TRAVIS_SCRIPTS_DIR="$VENDOR_DIR/pantheon-systems/travis-scripts"
+EXAMPLES_DIR="$TRAVIS_SCRIPTS_DIR/examples"
+
+# Test to see if this script was called correctly
+if [ "$(basename $SELF_DIRNAME") != "bin" ] || [ ! -d "$EXAMPLES_DIR" ]
+then
+  echo "See the README.md for instructions on how to use this script." >&2
+  exit 1
+fi
+
+# Copy and rename the example files per the instructions in the README.
+# Do not overwrite any existing files -- ignore errors
+cp -n $EXAMPLES_DIR/example.composer.json $PROJECT_BASE_DIR/composer.json
+cp -n $EXAMPLES_DIR/example.gitignore $PROJECT_BASE_DIR/.gitignore
+cp -n $EXAMPLES_DIR/example.travis.yml $PROJECT_BASE_DIR/.travis.yml
+cp -n $EXAMPLES_DIR/example.behat.yml $PROJECT_BASE_DIR/behat.yml
+
+# Duplicate the entire 'features' directory with rsync. Ignore existing files.
+rsync -rv --ignore-existing $EXAMPLES_DIR/features $PROJECT_BASE_DIR

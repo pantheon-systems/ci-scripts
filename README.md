@@ -14,11 +14,16 @@ All of this can be accomplished with only a few light files committed to your re
 Copy the contents of the `examples` directory to the root of your project, renaming files as appropriate:
 ```
   example.composer.json -> composer.json
+  example.gitignore     -> .gitignore
   example.travis.yml    -> .travis.yml
   example.behat.yml     -> behat.yml
   features              -> features
 ```
-You must customize the contents of these files to suit the needs of your project.
+The project [example-drupal7-composer](https://github.com/pantheon-systems/example-drupal7-composer) can be used as a template to create your own project.
+
+## Configuration
+
+You must customize the contents of these files to suit the needs of your project.  See the detailed instructions below; more information is also available in the comments inside each file.
 
 #### Composer
 
