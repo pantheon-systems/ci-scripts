@@ -3,7 +3,7 @@
 This project is designed to be included from the **require-dev** section of a Drupal site's `composer.json` file.  Doing this allows you to achieve the following things:
 
 * Specify the Drupal modules, themes and libraries you use in your composer.json file, and build them with Composer.
-* Automatically build components from within a Travis build on every commit.
+* Automatically build components via Travis every commit.
 * Use Behat to run tests on your site from Travis.
 * Automatically deploy your site to your Pantheon dev environment, or some other branch, every time the tests pass.
 
