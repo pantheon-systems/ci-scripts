@@ -132,9 +132,15 @@ __EOF__
   echo "Here's the status change!"
   git status
 
-  # If there is no settings.php file, then we will create one.
+  # If there is no settings.php file on Pantheon, then we will create one.
+  # n.b. there is always a settings.php file in $TAVIS_BUILD_DIR; it was
+  # created when we did the local `drush site-install` prior to testing on
+  # behat.  We'll remove it now, and replace it with some other settings.php
+  # file.
   INSTALL_SITE=false
   chmod +w sites/default
+  rm -f sites/default/settings.php
+  aborterr "Could not remote built settings.php file."
   if [ ! -f $HOME/pantheon/sites/default/settings.php ]
   then
     cp -f $HOME/pantheon/sites/default/default.settings.php sites/default/settings.php
@@ -147,8 +153,8 @@ __EOF__
     INSTALL_SITE=true
   else
     # Maintain existing Pantheon settings.php file.
-    chmod +w sites/default/settings.php
     cp $HOME/pantheon/sites/default/settings.php sites/default/settings.php
+    aborterr "Could not preserve existing settings.php file."
   fi
 
   # Push our built files up to Pantheon
