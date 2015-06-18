@@ -180,7 +180,7 @@ __EOF__
     drush --strict=0 @pantheon.$PSITE.$PENV -y site-install standard --site-name="$SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
     aborterr "Could not install Drupal on Pantheon test site"
     # Commit the modification made to settings.php and switch back to git mode
-    terminus site code commit --site="$PSITE" --env="$PENV" --message="Settings.php modifications made by site-install"
+    terminus site code commit --site="$PSITE" --env="$PENV" --message="Settings.php modifications made by site-install" --yes
     aborterr "Could not commit settings.php changes"
     terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
     aborterr "Could not switch back to git mode"
