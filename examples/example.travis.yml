@@ -63,15 +63,14 @@ install:
   - composer install
 
 before_script:
-  # Set the 'sendmail_path' to point to the program 'true'; this
-  # will cause the system to discard any emails Drupal tries to send.
-  - echo "sendmail_path='true'" >> `php --ini | grep "Loaded Configuration" | awk '{print $4}'`
+  # Discard any emails Drupal tries to send.
+  - bin/disable-php-email
 
 script:
   # Run our behat tests on Travis
   # Install Drupal and launch the PHP built-in webserver
   - bash bin/setup-before-tests
-  - ./bin/behat
+  - bin/behat
 
 after_success:
   # Place a passphrase-free ssh key so that you can clone and push to your

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Run on Travis to prevent PHP from delivering any email.
+
+echo "sendmail_path='true'" >> `php --ini | grep "Loaded Configuration" | awk '{print $4}'`

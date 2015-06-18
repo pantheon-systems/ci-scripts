@@ -12,6 +12,7 @@
     },
     "bin": [
         "scripts/init-new-project",
+        "scripts/disable-php-email",
         "scripts/setup-before-tests",
         "scripts/push-to-pantheon",
         "scripts/stop-webserver",
