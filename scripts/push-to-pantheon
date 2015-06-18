@@ -155,6 +155,22 @@ __EOF__
     # Maintain existing Pantheon settings.php file.
     cp $HOME/pantheon/sites/default/settings.php sites/default/settings.php
     aborterr "Could not preserve existing settings.php file."
+
+    # Check to see if a pre-installed site is running okay.  If we
+    # can't bootstrap Drupal, then we'll re-install
+    echo "Drush status on the remote site:"
+    drush --strict=0 @pantheon.$PSITE.$PENV status
+    # Check to see if we are having any bootstrap problems.
+    if [ $? == 0 ]
+    then
+      BOOTSTRAPPED=$(drush  --strict=0 @pantheon.$PSITE.$PENV status "Drupal bootstrap")
+    fi
+    if [ $? != 0 ] || [ -z "$BOOTSTRAPPED" ]
+    then
+      # Wipe the site and start over
+      terminus site wipe --site="$PSITE" --env="$PENV" --yes
+      INSTALL_SITE=true
+    fi
   fi
 
   # Push our built files up to Pantheon
@@ -164,11 +180,6 @@ __EOF__
   aborterr "'git commit' failed"
   git push origin master
   aborterr "'git push' failed"
-
-  # We'll run 'drush status' once to fire up the ssh connection
-  # (get rid of the junk line it prints on first run)
-  echo "Drush status on the remote site:"
-  drush --strict=0 @pantheon.$PSITE.$PENV status
 
   # If we created a settings.php file, then run 'site install'
   if $INSTALL_SITE
