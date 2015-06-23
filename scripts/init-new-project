@@ -29,7 +29,7 @@ TRAVIS_SCRIPTS_DIR="$VENDOR_DIR/pantheon-systems/travis-scripts"
 EXAMPLES_DIR="$TRAVIS_SCRIPTS_DIR/examples"
 
 # Test to see if this script was called correctly
-if [ "$(basename $SELF_DIRNAME") != "bin" ] || [ ! -d "$EXAMPLES_DIR" ]
+if [ "$(basename "$SELF_DIRNAME")" != "bin" ] || [ ! -d "$EXAMPLES_DIR" ]
 then
   echo "See the README.md for instructions on how to use this script." >&2
   exit 1
