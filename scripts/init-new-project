@@ -22,7 +22,7 @@ SELF_DIRNAME="`dirname -- "$0"`"
 PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
 
 # The project name is the name of the directory that contains the project
-PROJECT_NAME="$(basename "PROJECT_BASE_DIR")"
+PROJECT_NAME="$(basename "$PROJECT_BASE_DIR")"
 
 # We expect that pantheon-systems/travis-scripts is in the project's
 # composer.json file, and that therefore we should be able to find
