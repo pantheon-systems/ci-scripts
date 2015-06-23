@@ -1,6 +1,7 @@
 travis-ci-key
 travis/travis-ci-key
 bin
+vendor
 drupal/.drush-lock-update
 drupal/.gitignore
 drupal/.htaccess
