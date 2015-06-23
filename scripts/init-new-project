@@ -25,6 +25,10 @@ PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
 # composer.json file, and that therefore we should be able to find
 # the 'examples' directory in VENDOR/pantheon-systems/travis-scripts/examples.
 VENDOR_DIR="$PROJECT_BASE_DIR/drupal/sites/all/vendor"
+if [ ! -d "$VENDOR_DIR" ]
+then
+  VENDOR_DIR="$PROJECT_BASE_DIR/vendor"
+fi
 TRAVIS_SCRIPTS_DIR="$VENDOR_DIR/pantheon-systems/travis-scripts"
 EXAMPLES_DIR="$TRAVIS_SCRIPTS_DIR/examples"
 
