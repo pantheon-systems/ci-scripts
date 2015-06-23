@@ -5,11 +5,15 @@ project.
 
 ## Next Steps
 
-Please follow the [configuration instructions](https://github.com/pantheon-systems/travis-scripts#configuration)
-in the [pantheon-systems/travis-scripts](https://github.com/pantheon-systems/travis-scripts) project 
-to set up Behat testing on Travis CI on every commit.
+A git repository should have already been created for your project.  Follow the [instructions on GitHub](https://help.github.com/articles/adding-an-existing-project-to-github-using-the-command-line/)
+to push this local repository up to GitHub, where it can be configured to be
+tested with Behat on Travis CI on Every commit.
 
-Also customize this README to suite your project.
+The [configuration instructions](https://github.com/pantheon-systems/travis-scripts#configuration)
+in the [pantheon-systems/travis-scripts](https://github.com/pantheon-systems/travis-scripts) project 
+can help you accomplish this.
+
+Finally, customize this README file for your project.
 
 ## Local Testing
 

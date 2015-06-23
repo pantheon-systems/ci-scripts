@@ -21,6 +21,9 @@ SELF_DIRNAME="`dirname -- "$0"`"
 # The project base dir is the immediate parent of the 'bin' dir
 PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
 
+# The project name is the name of the directory that contains the project
+PROJECT_NAME="$(basename "$(PROJECT_BASE_DIR)")"
+
 # We expect that pantheon-systems/travis-scripts is in the project's
 # composer.json file, and that therefore we should be able to find
 # the 'examples' directory in VENDOR/pantheon-systems/travis-scripts/examples.
@@ -67,4 +70,15 @@ cp -n $EXAMPLES_DIR/example.behat.yml $PROJECT_BASE_DIR/behat.yml
 cp -n $EXAMPLES_DIR/initial.README.md $PROJECT_BASE_DIR/README.md
 
 # Duplicate the entire 'features' directory with rsync. Ignore existing files.
-rsync -rv --ignore-existing $EXAMPLES_DIR/features $PROJECT_BASE_DIR
+rsync -rv --ignore-existing $EXAMPLES_DIR/features $PROJECT_BASE_DIR &> /dev/null
+
+# Create a local git repository, if one does not already exist
+if [ ! -d "$PROJECT_BASE_DIR/.git" ]
+then
+  cd "$PROJECT_BASE_DIR"
+  git init
+  git add .
+  git commit -m "Project '$PROJECT_NAME' created via pantheon-systems/travis-scripts."
+  echo
+  echo "Project initialization completed.  Please see the local README.md file for next steps."
+fi
