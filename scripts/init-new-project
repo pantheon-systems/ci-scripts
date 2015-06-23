@@ -24,6 +24,10 @@ PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
 # We expect that pantheon-systems/travis-scripts is in the project's
 # composer.json file, and that therefore we should be able to find
 # the 'examples' directory in VENDOR/pantheon-systems/travis-scripts/examples.
+# The 'vendor' directory should be in drupal/sites/all/vendor, but
+# we will allow that it might be in the root directory of the project,
+# e.g. if the user added pantheon-systems/travis-scripts to an existing
+# composer.json file manually, and still wishes to run this init script.
 VENDOR_DIR="$PROJECT_BASE_DIR/drupal/sites/all/vendor"
 if [ ! -d "$VENDOR_DIR" ]
 then
@@ -46,12 +50,21 @@ if [ "$?" == "0" ] ; then
   rm -f $PROJECT_BASE_DIR/composer.json
 fi
 
+# Check to see if the existing README.md is the distribution version.
+# If it is, then replace it with the initial README.md file from the
+# examples directory.
+grep -q "composer create-project pantheon-systems/example-drupal7-composer" $PROJECT_BASE_DIR/README.md
+if [ "$?" == "0" ] ; then
+  rm -f $PROJECT_BASE_DIR/README.md
+fi
+
 # Copy and rename the example files per the instructions in the README.
 # Do not overwrite any existing files -- ignore errors
 cp -n $EXAMPLES_DIR/example.composer.json $PROJECT_BASE_DIR/composer.json
 cp -n $EXAMPLES_DIR/example.gitignore $PROJECT_BASE_DIR/.gitignore
 cp -n $EXAMPLES_DIR/example.travis.yml $PROJECT_BASE_DIR/.travis.yml
 cp -n $EXAMPLES_DIR/example.behat.yml $PROJECT_BASE_DIR/behat.yml
+cp -n $EXAMPLES_DIR/initial.README.md $PROJECT_BASE_DIR/README.md
 
 # Duplicate the entire 'features' directory with rsync. Ignore existing files.
 rsync -rv --ignore-existing $EXAMPLES_DIR/features $PROJECT_BASE_DIR
