@@ -35,6 +35,13 @@ then
   exit 1
 fi
 
+# Check to see if the existing composer.json file is the distribution
+# version.  If it is, then replace it with the example composer.json.
+grep -q "replace this file and set up your starting project" $PROJECT_BASE_DIR/composer.json
+if [ "$?" == "0" ] ; then
+  rm -f $PROJECT_BASE_DIR/composer.json
+fi
+
 # Copy and rename the example files per the instructions in the README.
 # Do not overwrite any existing files -- ignore errors
 cp -n $EXAMPLES_DIR/example.composer.json $PROJECT_BASE_DIR/composer.json
