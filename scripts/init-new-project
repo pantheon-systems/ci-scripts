@@ -64,12 +64,13 @@ cp -n $EXAMPLES_DIR/example.behat.yml $PROJECT_BASE_DIR/behat.yml
 rsync -rv --ignore-existing $EXAMPLES_DIR/features $PROJECT_BASE_DIR &> /dev/null
 
 # Create a local git repository, if one does not already exist
+cd "$PROJECT_BASE_DIR"
 if [ ! -d "$PROJECT_BASE_DIR/.git" ]
 then
-  cd "$PROJECT_BASE_DIR"
   git init
-  git add .
-  git commit -m "Project '$PROJECT_NAME' created via pantheon-systems/travis-scripts."
-  echo
-  echo "Project initialization completed.  Please see the local README.md file for next steps."
 fi
+git add .
+git commit -m "Project '$PROJECT_NAME' created via 'init-new-project' script from https://github.com/pantheon-systems/travis-scripts."
+echo
+echo "Project initialization completed.  Please see the local README.md file for next steps."
+
