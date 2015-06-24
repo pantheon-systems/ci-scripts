@@ -53,21 +53,12 @@ if [ "$?" == "0" ] ; then
   rm -f $PROJECT_BASE_DIR/composer.json
 fi
 
-# Check to see if the existing README.md is the distribution version.
-# If it is, then replace it with the initial README.md file from the
-# examples directory.
-grep -q "composer create-project pantheon-systems/example-drupal7-composer" $PROJECT_BASE_DIR/README.md
-if [ "$?" == "0" ] ; then
-  rm -f $PROJECT_BASE_DIR/README.md
-fi
-
 # Copy and rename the example files per the instructions in the README.
 # Do not overwrite any existing files -- ignore errors
 cp -n $EXAMPLES_DIR/example.composer.json $PROJECT_BASE_DIR/composer.json
 cp -n $EXAMPLES_DIR/example.gitignore $PROJECT_BASE_DIR/.gitignore
 cp -n $EXAMPLES_DIR/example.travis.yml $PROJECT_BASE_DIR/.travis.yml
 cp -n $EXAMPLES_DIR/example.behat.yml $PROJECT_BASE_DIR/behat.yml
-cp -n $EXAMPLES_DIR/initial.README.md $PROJECT_BASE_DIR/README.md
 
 # Duplicate the entire 'features' directory with rsync. Ignore existing files.
 rsync -rv --ignore-existing $EXAMPLES_DIR/features $PROJECT_BASE_DIR &> /dev/null
