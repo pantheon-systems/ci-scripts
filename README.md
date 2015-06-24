@@ -19,7 +19,7 @@ Copy the contents of the `examples` directory to the root of your project, renam
   example.behat.yml     -> behat.yml
   features              -> features
 ```
-The project [example-drupal7-composer](https://github.com/pantheon-systems/example-drupal7-composer) can be used as a template to create your own project.
+The project [example-drupal7-composer](https://github.com/pantheon-systems/example-drupal7-composer) can be used as a template to quickly create your own project.
 
 ## Configuration
 
