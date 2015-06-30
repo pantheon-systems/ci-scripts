@@ -1,6 +1,6 @@
 ## About
 
-This project is designed to be included from the **require-dev** section of a Drupal site's `composer.json` file.  Doing this allows you to achieve the following things:
+This project is designed to be included from the **require** section of a Drupal site's `composer.json` file.  Doing this allows you to achieve the following things:
 
 * Specify the Drupal modules, themes and libraries you use in your composer.json file, and build them with Composer.
 * Automatically build components via Travis every commit.
@@ -13,13 +13,12 @@ All of this can be accomplished with only a few light files committed to your re
 
 Copy the contents of the `examples` directory to the root of your project, renaming files as appropriate:
 ```
-  example.composer.json -> composer.json
   example.gitignore     -> .gitignore
   example.travis.yml    -> .travis.yml
   example.behat.yml     -> behat.yml
   features              -> features
 ```
-The project [example-drupal7-composer](https://github.com/pantheon-systems/example-drupal7-composer) can be used as a template to quickly create your own project.
+You will also need a composer.json file for your project.  The project [example-drupal7-composer](https://github.com/pantheon-systems/example-drupal7-composer) can be used as a template to quickly create your own project; for Drupal 8, see [drupal-composer/drupal-project](https://github.com/drupal-composer/drupal-project).
 
 ## Configuration
 
@@ -31,7 +30,7 @@ Set the **name** and **description** in your composer.json file to something app
 
 Customize the **require** section to contain the modules and themes needed for your project.  You might want to try using [drush composer-generate](https://www.drupal.org/project/composer_generate) to get started.  If you want to run your site on Pantheon, then you should keep "pantheon-systems/drops-7" as your main component; otherwise, you may replace this with "drupal/drupal" if you prefer.
 
-The **require-dev** section contains the components needed by this project (including a reference to this project itself as the first item).  If you alter any of the selections here, you will fundamentally alter the way these scripts operate; only do this if you really understand all of the implications.
+The custom installers in the **require** section of your composer.json file control the way the components in your project are installed. Always keep these items at the top, so that they are available at the very beginning of the installation process.  Modules and themes listed before the custom installers might not install correctly.
 
 #### Travis
 
