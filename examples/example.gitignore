@@ -26,11 +26,13 @@ drupal/profiles/
 drupal/robots.txt
 drupal/scripts/
 drupal/sites/README.txt
+drupal/sites/all/README.txt
 drupal/sites/all/libraries/
 drupal/sites/all/modules/README.txt
 drupal/sites/all/modules/contrib/
 drupal/sites/all/themes/contrib/
 drupal/sites/all/vendor/
+drupal/sites/default/default.settings.php
 drupal/sites/example.sites.php
 drupal/sites/sites/
 drupal/themes/
