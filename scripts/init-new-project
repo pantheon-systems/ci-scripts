@@ -50,6 +50,7 @@ fi
 # Do not overwrite any existing files -- ignore errors
 cp -n $EXAMPLES_DIR/example.gitignore $PROJECT_BASE_DIR/.gitignore
 cp -n $EXAMPLES_DIR/example.travis.yml $PROJECT_BASE_DIR/.travis.yml
+cp -n $EXAMPLES_DIR/example.circle.yml $PROJECT_BASE_DIR/circle.yml
 cp -n $EXAMPLES_DIR/example.behat.yml $PROJECT_BASE_DIR/behat.yml
 
 # Duplicate the entire 'features' directory with rsync. Ignore existing files.

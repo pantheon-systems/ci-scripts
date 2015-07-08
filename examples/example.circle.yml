@@ -1,0 +1,20 @@
+machine:
+  php:
+    version: 5.5.11
+  hosts:
+    localhost: 127.0.0.1
+
+test:
+  pre:
+    - bin/disable-php-email
+    - bin/install-drupal
+    - bin/start-webserver:
+        background: true
+    - bin/wait-for-webserver
+
+  override:
+    - bin/behat
+
+  post:
+    - bin/stop-webserver
+
