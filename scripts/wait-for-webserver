@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# wait-for-webserver
+#
+# Pause until the webserver responds on port 8088.
+#
+
+
+# Wait for the webserver to spin up; stop when we find someone listening on the right port.
+echo "Waiting for the web server to finish spinning up."
+until netstat -an 2>/dev/null | grep '8088.*LISTEN'; do sleep 0.2; done
+echo "Webserver ready; continuing."

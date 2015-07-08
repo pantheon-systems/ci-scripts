@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# start-webserver
+#
+# Start the PHP built-in webserver.
+#
+
+SELF_DIRNAME="`dirname -- "$0"`"
+PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
+
+# Set up our $PATH
+export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
+
+# Use Drush to spin up PHP's built-in webserver
+cd $PROJECT_BASE_DIR/drupal
+drush runserver --server=builtin 8088 --strict=0 </dev/null &>$HOME/server.log &
+if [ $? != 0 ]
+then
+  echo "Could not start php built-in webserver" >&2
+  exit 1
+fi
