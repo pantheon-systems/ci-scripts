@@ -30,11 +30,11 @@ cp $PROJECT_BASE_DIR/drupal/sites/default/default.settings.php $PROJECT_BASE_DIR
 # Set up some variables to match the environment
 DBURL=mysql://root@localhost/drupal
 INSTALLNAME="$SITE_NAME Local Test Site"
-if [ -n $TRAVIS ]
+if [ -n "$TRAVIS" ]
 then
   INSTALLNAME="$SITE_NAME Travis Test Site"
 fi
-if [ -n $CIRCLECI ]
+if [ -n "$CIRCLECI" ]
 then
   DBURL=mysql://ubuntu@127.0.0.1/circle_test
   INSTALLNAME="$SITE_NAME Circle Test Site"
