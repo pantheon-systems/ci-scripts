@@ -73,7 +73,7 @@ function policy_drush_sitealias_alter(&\$alias_record) {
 __EOF__
 
   # Capture the commit message
-  export TRAVIS_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
+  export CI_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
 
   # Install Terminus
   mkdir -p $HOME/bin
@@ -176,7 +176,7 @@ __EOF__
   # Push our built files up to Pantheon
   git add --all
   aborterr "'git add --all' failed"
-  git commit -a -m "Built by CI: '$TRAVIS_COMMIT_MSG'"
+  git commit -a -m "Built by CI: '$CI_COMMIT_MSG'"
   aborterr "'git commit' failed"
   git push origin master
   aborterr "'git push' failed"
