@@ -2,14 +2,34 @@
 #
 # push-to-pantheon.sh
 #
-# This script will push all of the generated build results created
-# on Travis to a Drupal site hosted on Pantheon.
+# This script will push all of the generated build results created on a
+# CI server such as Travis or Circle to a Drupal site hosted on Pantheon.
 #
-# This script is designed only to be called by Travis.  It relies
-# on special encrypted environment variables set by Travis to provide
-# the credentials used to log in to the Pantheon dashboard.  See
-# travis.yml for details.
+# This script is designed only to be called by the CI server.  It relies
+# on special encrypted environment variables that must be set up in advance
+# to provide the credentials used to log in to the Pantheon dashboard.
 #
+# The specific environment variables we need are:
+#
+#   SITE_NAME: The human-readable name of the site to give to site-install
+#   PSITE: The name of the Pantheon site to push to
+#   PENV:  The environment of the site to push to (e.g. "dev")
+#   PEMAIL: The email address to log on to Pantheon with
+#   PPASS: The password to log on to Pantheon with
+#   CI_BOT_EMAIL: The email address to use in the git commit attribution
+#   CI_BOT_NAME: The name to use in the git commit attribution
+#
+# It is also expected that there should be an SSH private key in
+# $HOME/.ssh that can be used to push code to the Pantheon git repository.
+#
+# For specific configuration instructions, see:
+#
+#   https://github.com/pantheon-systems/travis-scripts
+#   https://github.com/pantheon-systems/circle-scripts
+#
+
+SELF_DIRNAME="`dirname -- "$0"`"
+PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
 
 #
 # Exit with a message if the previous function returned an error.
@@ -38,8 +58,33 @@ function check() {
   echo "$1"
 }
 
+
+# Provide default values for commit attribution if not
+# provided in enviornment variables.
+if [ -z "$CI_BOT_DOMAIN" ]
+then
+  CI_BOT_DOMAIN="${PEMAIL/*@/}"
+fi
+if [ -z "CI_BOT_EMAIL" ]
+then
+  CI_BOT_EMAIL="ci-bot@$CI_BOT_DOMAIN"
+fi
+if [ -z "$CI_BOT_NAME" ]
+then
+  CI_BOT_NAME="CI Bot"
+fi
+
+# If the CI provides us with an explicit build location (e.g. on Travis),
+# then we'll always believe that.  Otherwise, we'll stick with our base
+# assumption, which is that the project base dir is in the directory
+# above where this script is located (i.e. $PROJECT_BASE_DIR/bin/push-to-pantheon)
+if [ -n "$TRAVIS_BUILD_DIR" ]
+then
+  PROJECT_BASE_DIR="$TRAVIS_BUILD_DIR"
+fi
+
 # Add vendor/bin and $HOME/bin to our $PATH
-export PATH="$TRAVIS_BUILD_DIR/bin:$HOME/bin:$PATH"
+export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
 
 # If Drush version is not specified, then default to Drush 6
 if [ -z "$DRUSH_VERSION" ]
@@ -55,10 +100,10 @@ if [ -n "$PPASS" ]
 then
   # Dynamic hosts through Pantheon mean constantly checking interactively
   # that we mean to connect to an unknown host. We ignore those here.
-  echo "StrictHostKeyChecking no" > ~/.ssh/config
+  echo "StrictHostKeyChecking no" > $HOME/.ssh/config
 
   # Create a local policy file that specifies the version of Drush that
-  # Travis should use when running Drush commands remotely on Pantheon.
+  # the CI server should use when running Drush commands remotely on Pantheon.
   # n.b. we still want to use drush8 for Drupal 8 sites
   mkdir -p "$HOME/.drush"
   cat << __EOF__ > "$HOME/.drush/policy.drush.inc"
@@ -103,21 +148,21 @@ __EOF__
   check "Changed connection mode to 'git' for $PSITE $PENV environment" "Could not change connection mode to 'git' for $PSITE $PENV environment"
 
   # Identify the automation user
-  git config --global user.email "bot@westkingdom.org"
-  git config --global user.name "West Kingdom Automation"
+  git config --global user.email "$CI_BOT_EMAIL"
+  git config --global user.name "$CI_BOT_NAME"
 
   # Clone the Pantheon repository into a separate directory, then
   # move the .git file to the location where we placed our composer targets
-  cd $TRAVIS_BUILD_DIR
+  cd $PROJECT_BASE_DIR
   REPO="ssh://codeserver.dev.$PUUID@codeserver.dev.$PUUID.drush.in:2222/~/repository.git"
   git clone --depth 1 "$REPO" $HOME/pantheon
   check "git clone successful" "Could not clone repository from $REPO"
   # Get rid of any .git directories created by composer
-  rm -rf $(find $TRAVIS_BUILD_DIR/drupal -name ".git")
+  rm -rf $(find $PROJECT_BASE_DIR/drupal -name ".git")
   # Move the .git directory we checked out on top of the files we built.
   # This is functionally equivalent to copying the built files over the
   # checked-out repository, except more efficient.
-  mv $HOME/pantheon/.git $TRAVIS_BUILD_DIR/drupal
+  mv $HOME/pantheon/.git $PROJECT_BASE_DIR/drupal
 
   # Use our .gitignore file from our source repository to build
   # a .gitattributes file in our Pantheon repository.  Anything
@@ -125,10 +170,10 @@ __EOF__
   # ignored because it is a built target.  We want to also ignore
   # the same set of files when making diffs on the Pantheon repository,
   # to avoid large diffs full of uninteresting changes.
-  grep drupal $TRAVIS_BUILD_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > $TRAVIS_BUILD_DIR/drupal/.gitattributes
+  grep drupal $PROJECT_BASE_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > $PROJECT_BASE_DIR/drupal/.gitattributes
 
   # Output of the diff vs upstream.
-  cd $TRAVIS_BUILD_DIR/drupal
+  cd $PROJECT_BASE_DIR/drupal
   echo "Here's the status change!"
   git status
 
@@ -137,7 +182,10 @@ __EOF__
   # created when we did the local `drush site-install` prior to testing on
   # behat.  We'll remove it now, and replace it with some other settings.php
   # file.
-  INSTALL_SITE=false
+  if [ -z "$INSTALL_SITE" ]
+  then
+    INSTALL_SITE=false
+  fi
   chmod +w sites/default
   rm -f sites/default/settings.php
   aborterr "Could not remote built settings.php file."
