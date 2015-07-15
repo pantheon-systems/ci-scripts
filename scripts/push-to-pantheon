@@ -70,7 +70,7 @@ _CI_BOT_NAME="${CI_BOT_NAME:-CI Bot}"
 _DRUSH_VERSION="${DRUSH_VERSION:-6}"
 
 # If Terminus version is not specified, then default to 0.5.5
-_TERMINUS_VERSION="${TERMINUS_VERSION:0.5.5}"
+_TERMINUS_VERSION="${TERMINUS_VERSION:-0.5.5}"
 
 # If the CI provides us with an explicit build location (e.g. on Travis),
 # then we'll always believe that.  Otherwise, we'll stick with our base
