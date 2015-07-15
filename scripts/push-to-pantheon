@@ -18,6 +18,8 @@
 #   PPASS: The password to log on to Pantheon with
 #   CI_BOT_EMAIL: The email address to use in the git commit attribution
 #   CI_BOT_NAME: The name to use in the git commit attribution
+#   DRUSH_VERSION: The version of Drush to use on Pantheon
+#   TERMINUS_VERSION: The version of Terminus to download and use in this script
 #
 # It is also expected that there should be an SSH private key in
 # $HOME/.ssh that can be used to push code to the Pantheon git repository.
@@ -58,21 +60,17 @@ function check() {
   echo "$1"
 }
 
-
 # Provide default values for commit attribution if not
 # provided in enviornment variables.
-if [ -z "$CI_BOT_DOMAIN" ]
-then
-  CI_BOT_DOMAIN="${PEMAIL/*@/}"
-fi
-if [ -z "$CI_BOT_EMAIL" ]
-then
-  CI_BOT_EMAIL="ci-bot@${CI_BOT_DOMAIN}"
-fi
-if [ -z "$CI_BOT_NAME" ]
-then
-  CI_BOT_NAME="CI Bot"
-fi
+_CI_BOT_DOMAIN="${CI_BOT_DOMAIN:-${PEMAIL/*@/}}"
+_CI_BOT_EMAIL="${CI_BOT_EMAIL:-ci-bot@$_CI_BOT_DOMAIN}"
+_CI_BOT_NAME="${CI_BOT_NAME:-CI Bot}"
+
+# If Drush version is not specified, then default to Drush 6
+_DRUSH_VERSION="${DRUSH_VERSION:-6}"
+
+# If Terminus version is not specified, then default to 0.5.5
+_TERMINUS_VERSION="${TERMINUS_VERSION:0.5.5}"
 
 # If the CI provides us with an explicit build location (e.g. on Travis),
 # then we'll always believe that.  Otherwise, we'll stick with our base
@@ -85,12 +83,6 @@ fi
 
 # Add vendor/bin and $HOME/bin to our $PATH
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
-
-# If Drush version is not specified, then default to Drush 6
-if [ -z "$DRUSH_VERSION" ]
-then
-  DRUSH_VERSION=6
-fi
 
 # Do not attempt to push the site up to Pantheon unless the PPASS
 # environment variable is set.  If we receive a PR from an external
@@ -112,7 +104,7 @@ then
 function policy_drush_sitealias_alter(&\$alias_record) {
   // Fix pantheon aliases!
   if (isset(\$alias_record['remote-host']) && (substr(\$alias_record['remote-host'], 0, 10) == 'appserver.')) {
-    \$alias_record['path-aliases']['%drush-script'] = 'drush$DRUSH_VERSION';
+    \$alias_record['path-aliases']['%drush-script'] = 'drush$_DRUSH_VERSION';
   }
 }
 __EOF__
@@ -120,10 +112,14 @@ __EOF__
   # Capture the commit message
   export CI_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
 
-  # Install Terminus
-  mkdir -p $HOME/bin
-  curl https://github.com/pantheon-systems/cli/releases/download/0.5.5/terminus.phar -L -o $HOME/bin/terminus
-  chmod +x $HOME/bin/terminus
+  # If Terminus is not already in the $PATH, then install it.
+  CHECK_TERMINUS="$(which terminus)"
+  if [ -z "$CHECK_TERMINUS" ]
+  then
+    mkdir -p $HOME/bin
+    curl https://github.com/pantheon-systems/cli/releases/download/$_TERMINUS_VERSION/terminus.phar -L -o $HOME/bin/terminus
+    chmod +x $HOME/bin/terminus
+  fi
 
   # Set up Terminus and aliases, and wake up the site
   echo "Log in to Pantheon via Terminus"
@@ -148,8 +144,8 @@ __EOF__
   check "Changed connection mode to 'git' for $PSITE $PENV environment" "Could not change connection mode to 'git' for $PSITE $PENV environment"
 
   # Identify the automation user
-  git config --global user.email "$CI_BOT_EMAIL"
-  git config --global user.name "$CI_BOT_NAME"
+  git config --global user.email "$_CI_BOT_EMAIL"
+  git config --global user.name "$_CI_BOT_NAME"
 
   # Clone the Pantheon repository into a separate directory, then
   # move the .git file to the location where we placed our composer targets
