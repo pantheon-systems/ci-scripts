@@ -65,9 +65,9 @@ if [ -z "$CI_BOT_DOMAIN" ]
 then
   CI_BOT_DOMAIN="${PEMAIL/*@/}"
 fi
-if [ -z "CI_BOT_EMAIL" ]
+if [ -z "$CI_BOT_EMAIL" ]
 then
-  CI_BOT_EMAIL="ci-bot@$CI_BOT_DOMAIN"
+  CI_BOT_EMAIL="ci-bot@${CI_BOT_DOMAIN}"
 fi
 if [ -z "$CI_BOT_NAME" ]
 then
