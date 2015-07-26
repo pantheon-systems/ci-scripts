@@ -7,9 +7,16 @@
 
 SELF_DIRNAME="`dirname -- "$0"`"
 PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
+DRUPAL_ROOT="$PROJECT_BASE_DIR/drupal"
 
 # Set up our $PATH
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
+
+DEFAULT_ENVIRONMENT_SCRIPT="$PROJECT_BASE_DIR/scripts/default-environment"
+if [ -f "$DEFAULT_ENVIRONMENT_SCRIPT" ]
+then
+  source "$DEFAULT_ENVIRONMENT_SCRIPT"
+fi
 
 # Fix bug in our custom installer
 if [ -d $PROJECT_BASE_DIR/drupal/sites/sites/default ]
@@ -30,21 +37,22 @@ chmod +w $PROJECT_BASE_DIR/drupal/sites/default/settings.php
 cp $PROJECT_BASE_DIR/drupal/sites/default/default.settings.php $PROJECT_BASE_DIR/drupal/sites/default/settings.php
 
 # Set up some variables to match the environment
-DBURL=mysql://root@localhost/drupal
-INSTALLNAME="$SITE_NAME Local CI Test Site"
+FALLBACK_DBURL=mysql://root@localhost/drupal
+SITENAME_SUFFIX=" Local CI Test Site"
 if [ -n "$TRAVIS" ]
 then
-  INSTALLNAME="$SITE_NAME Travis CI Test Site"
+  SITENAME_SUFFIX=" Travis CI Test Site"
 fi
 if [ -n "$CIRCLECI" ]
 then
-  DBURL=mysql://ubuntu@127.0.0.1/circle_test
-  INSTALLNAME="$SITE_NAME Circle CI Test Site"
+  FALLBACK_DBURL=mysql://ubuntu@127.0.0.1/circle_test
+  SITENAME_SUFFIX=" Circle CI Test Site"
 fi
 
 # Use Drush to install Drupal
-cd $PROJECT_BASE_DIR/drupal
-drush site-install -y "${PROFILE:-standard}" --site-name="$INSTALLNAME" --db-url="$DBURL" --account-name=admin --account-pass=admin
+cd "$DRUPAL_ROOT"
+echo drush site-install -y "${PROFILE:-${DEFAULT_PROFILE:-standard}}" --site-name="${SITE_NAME:-${DEFAULT_SITE_NAME}}$SITENAME_SUFFIX" --db-url="${DBURL:-${DEFAULT_DBURL:-${FALLBACK_DBURL}}}" --account-name=${ACCOUNT:-${DEFAULT_ACCOUNT:-admin}} --account-pass=${PASSWORD:-${DEFAULT_PASSWORD:-admin}}
+drush site-install -y "${PROFILE:-${DEFAULT_PROFILE:-standard}}" --site-name="${SITE_NAME:-${DEFAULT_SITE_NAME}}$SITENAME_SUFFIX" --db-url="${DBURL:-${DEFAULT_DBURL:-${FALLBACK_DBURL}}}" --account-name=${ACCOUNT:-${DEFAULT_ACCOUNT:-admin}} --account-pass=${PASSWORD:-${DEFAULT_PASSWORD:-admin}}
 if [ $? != 0 ]
 then
   echo "Could not install Drupal" >&2
@@ -65,9 +73,26 @@ if (is_file(\$local_settings)) {
 __EOF__
 fi
 
+# Get the alias name to use
+ALIAS_NAME_ONLY="${ALIAS:-${DEFAULT_ALIAS:-localtest}}"
+ALIAS_NAME_ONLY="${ALIAS_NAME_ONLY/@/}"
+DRUSH_ALIAS="@$ALIAS_NAME_ONLY"
+
+# Create a local alias '@localtest' pointing at the local
+# site to test.
+cat << __EOF__ > "$HOME/.drush/$ALIAS_NAME_ONLY.alias.drushrc.php"
+<?php
+
+\$aliases['$ALIAS_NAME_ONLY'] = array(
+  'root' => '$DRUPAL_ROOT',
+  'uri' => '${URI:-${DEFAULT_URI:-default}}',
+);
+__EOF__
+
 # If there is a local script 'install-configuration', then run it.
 INSTALL_CONFIGURATION="$PROJECT_BASE_DIR/scripts/install-configuration"
 if [ -f "$INSTALL_CONFIGURATION" ]
 then
-  "$INSTALL_CONFIGURATION"
+  echo "$INSTALL_CONFIGURATION" "$DRUSH_ALIAS"
+  "$INSTALL_CONFIGURATION" "$DRUSH_ALIAS"
 fi
