@@ -25,6 +25,8 @@ fi
 
 # Do the settings.php shuffle for an empty settings.php
 # This prevents permissions issues with the sites/default directory
+chmod +w $PROJECT_BASE_DIR/drupal/sites/default
+chmod +w $PROJECT_BASE_DIR/drupal/sites/default/settings.php
 cp $PROJECT_BASE_DIR/drupal/sites/default/default.settings.php $PROJECT_BASE_DIR/drupal/sites/default/settings.php
 
 # Set up some variables to match the environment
@@ -40,11 +42,32 @@ then
   INSTALLNAME="$SITE_NAME Circle CI Test Site"
 fi
 
-# Use Drush to install Drupal and spin up PHP's built-in webserver
+# Use Drush to install Drupal
 cd $PROJECT_BASE_DIR/drupal
-drush site-install -y standard --site-name="$INSTALLNAME" --db-url="$DBURL" --account-name=admin --account-pass=admin
+drush site-install -y "${PROFILE:-standard}" --site-name="$INSTALLNAME" --db-url="$DBURL" --account-name=admin --account-pass=admin
 if [ $? != 0 ]
 then
   echo "Could not install Drupal" >&2
   exit 1
+fi
+
+# Add in include of settings.local.php to the settings.php file.
+chmod +w $PROJECT_BASE_DIR/drupal/sites/default
+chmod +w $PROJECT_BASE_DIR/drupal/sites/default/settings.php
+grep -q 'settings.local.php' "$PROJECT_BASE_DIR/drupal/sites/default/settings.php"
+if [ $? != 0 ]
+then
+  cat << __EOF__ >> "$PROJECT_BASE_DIR/drupal/sites/default/settings.php"
+\$local_settings = __DIR__ . "/settings.local.php";
+if (is_file(\$local_settings)) {
+  include "\$local_settings";
+}
+__EOF__
+fi
+
+# If there is a local script 'install-configuration', then run it.
+INSTALL_CONFIGURATION="$PROJECT_BASE_DIR/scripts/install-configuration"
+if [ -f "$INSTALL_CONFIGURATION" ]
+then
+  "$INSTALL_CONFIGURATION"
 fi
