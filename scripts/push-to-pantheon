@@ -138,6 +138,8 @@ __EOF__
   check "Site wakeup successful" "Could not wake up site"
   PUUID=$(terminus site info --site="$PSITE" --field=id)
   aborterr "Could not get UUID for $PSITE"
+  SITE_URI=$(drush --strict=0 @pantheon.$PSITE.$PENV --format=csv --fields=uri)
+  aborterr "Could not get URI for @pantheon.$PSITE.$PENV"
 
   # Make sure we are in git mode
   terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
@@ -253,4 +255,7 @@ __EOF__
     drush --strict=0 @pantheon.$PSITE.$PENV updatedb
     aborterr "updatedb failed on Pantheon site"
   fi
+
+  # Try to curl the homepage, to give the system time to spin up
+  curl --max-time 30 $SITE_URI &>/dev/null
 fi
