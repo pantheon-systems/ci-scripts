@@ -138,7 +138,7 @@ __EOF__
   check "Site wakeup successful" "Could not wake up site"
   PUUID=$(terminus site info --site="$PSITE" --field=id)
   aborterr "Could not get UUID for $PSITE"
-  SITE_URI=$(drush --strict=0 @pantheon.$PSITE.$PENV --format=csv --fields=uri)
+  SITE_URI=$(drush --strict=0 sa @pantheon.$PSITE.$PENV --format=csv --fields=uri)
   aborterr "Could not get URI for @pantheon.$PSITE.$PENV"
 
   # Make sure we are in git mode
