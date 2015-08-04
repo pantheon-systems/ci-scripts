@@ -32,6 +32,15 @@
 
 SELF_DIRNAME="`dirname -- "$0"`"
 PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
+DRUPAL_ROOT="$PROJECT_BASE_DIR/drupal"
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/web" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/web"
+fi
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
+fi
 
 #
 # Exit with a message if the previous function returned an error.
@@ -156,11 +165,11 @@ __EOF__
   git clone --depth 1 "$REPO" $HOME/pantheon
   check "git clone successful" "Could not clone repository from $REPO"
   # Get rid of any .git directories created by composer
-  rm -rf $(find $PROJECT_BASE_DIR/drupal -name ".git")
+  rm -rf $(find "$DRUPAL_ROOT" -name ".git")
   # Move the .git directory we checked out on top of the files we built.
   # This is functionally equivalent to copying the built files over the
   # checked-out repository, except more efficient.
-  mv $HOME/pantheon/.git $PROJECT_BASE_DIR/drupal
+  mv $HOME/pantheon/.git "$DRUPAL_ROOT"
 
   # Use our .gitignore file from our source repository to build
   # a .gitattributes file in our Pantheon repository.  Anything
@@ -168,10 +177,10 @@ __EOF__
   # ignored because it is a built target.  We want to also ignore
   # the same set of files when making diffs on the Pantheon repository,
   # to avoid large diffs full of uninteresting changes.
-  grep drupal $PROJECT_BASE_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > $PROJECT_BASE_DIR/drupal/.gitattributes
+  grep drupal $PROJECT_BASE_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > "$DRUPAL_ROOT/.gitattributes"
 
   # Output of the diff vs upstream.
-  cd $PROJECT_BASE_DIR/drupal
+  cd "$DRUPAL_ROOT"
   echo "Here's the status change!"
   git status
 
