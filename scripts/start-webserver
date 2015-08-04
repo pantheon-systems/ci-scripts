@@ -7,6 +7,15 @@
 
 SELF_DIRNAME="`dirname -- "$0"`"
 PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
+DRUPAL_ROOT="$PROJECT_BASE_DIR/drupal"
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/web" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/web"
+fi
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
+fi
 
 DEFAULT_ENVIRONMENT_SCRIPT="$PROJECT_BASE_DIR/scripts/default-environment"
 if [ -f "$DEFAULT_ENVIRONMENT_SCRIPT" ]
@@ -18,7 +27,7 @@ fi
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
 
 # Use Drush to spin up PHP's built-in webserver
-cd $PROJECT_BASE_DIR/drupal
+cd "$DRUPAL_ROOT"
 drush runserver --server=builtin ${PORT:-${DEFAULT_PORT:-8088}} --strict=0 </dev/null &>$HOME/server.log &
 if [ $? != 0 ]
 then
