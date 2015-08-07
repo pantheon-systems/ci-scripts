@@ -41,6 +41,13 @@ if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs" ]
 then
   DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
 fi
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/code" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/code"
+fi
+
+# Directory where we will temporarily check out the pantheon site
+WORK_REPO="$HOME/pantheon-site"
 
 #
 # Exit with a message if the previous function returned an error.
@@ -147,8 +154,6 @@ __EOF__
   check "Site wakeup successful" "Could not wake up site"
   PUUID=$(terminus site info --site="$PSITE" --field=id)
   aborterr "Could not get UUID for $PSITE"
-  SITE_URI=$(drush --strict=0 sa @pantheon.$PSITE.$PENV --format=csv --fields=uri)
-  aborterr "Could not get URI for @pantheon.$PSITE.$PENV"
 
   # Make sure we are in git mode
   terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
@@ -162,14 +167,14 @@ __EOF__
   # move the .git file to the location where we placed our composer targets
   cd $PROJECT_BASE_DIR
   REPO="ssh://codeserver.dev.$PUUID@codeserver.dev.$PUUID.drush.in:2222/~/repository.git"
-  git clone --depth 1 "$REPO" $HOME/pantheon
+  git clone --depth 1 "$REPO" "$WORK_REPO"
   check "git clone successful" "Could not clone repository from $REPO"
   # Get rid of any .git directories created by composer
   rm -rf $(find "$DRUPAL_ROOT" -name ".git")
   # Move the .git directory we checked out on top of the files we built.
   # This is functionally equivalent to copying the built files over the
   # checked-out repository, except more efficient.
-  mv $HOME/pantheon/.git "$DRUPAL_ROOT"
+  mv "$WORK_REPO/.git" "$DRUPAL_ROOT"
 
   # Use our .gitignore file from our source repository to build
   # a .gitattributes file in our Pantheon repository.  Anything
@@ -177,7 +182,10 @@ __EOF__
   # ignored because it is a built target.  We want to also ignore
   # the same set of files when making diffs on the Pantheon repository,
   # to avoid large diffs full of uninteresting changes.
-  grep drupal $PROJECT_BASE_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > "$DRUPAL_ROOT/.gitattributes"
+  if [ ! -f "$DRUPAL_ROOT/.gitattributes" ]
+  then
+    grep drupal $PROJECT_BASE_DIR/.gitignore | sed -e 's#drupal/\(.*\)#\1 -diff#' -e 's#/ -diff#/** -diff#' > "$DRUPAL_ROOT/.gitattributes"
+  fi
 
   # Output of the diff vs upstream.
   cd "$DRUPAL_ROOT"
@@ -196,9 +204,9 @@ __EOF__
   chmod +w sites/default
   rm -f sites/default/settings.php
   aborterr "Could not remote built settings.php file."
-  if [ ! -f $HOME/pantheon/sites/default/settings.php ]
+  if [ ! -f "$WORK_REPO/sites/default/settings.php" ]
   then
-    cp -f $HOME/pantheon/sites/default/default.settings.php sites/default/settings.php
+    cp -f "$WORK_REPO/sites/default/default.settings.php" sites/default/settings.php
     aborterr "Could not create settings.php with default.settings.php."
     # settings.php is excluded by our .gitignore, but
     # we need one on Pantheon in order to use drush si,
@@ -208,7 +216,7 @@ __EOF__
     INSTALL_SITE=true
   else
     # Maintain existing Pantheon settings.php file.
-    cp $HOME/pantheon/sites/default/settings.php sites/default/settings.php
+    cp "$WORK_REPO/sites/default/settings.php" sites/default/settings.php
     aborterr "Could not preserve existing settings.php file."
 
     # Check to see if a pre-installed site is running okay.  If we
@@ -264,6 +272,9 @@ __EOF__
     drush --strict=0 @pantheon.$PSITE.$PENV updatedb
     aborterr "updatedb failed on Pantheon site"
   fi
+
+  SITE_URI=$(drush --strict=0 sa @pantheon.$PSITE.$PENV --format=csv --fields=uri)
+  aborterr "Could not get URI for @pantheon.$PSITE.$PENV"
 
   # Try to curl the homepage, to give the system time to spin up
   curl --max-time 30 $SITE_URI &>/dev/null

@@ -16,6 +16,10 @@ if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs" ]
 then
   DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
 fi
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/code" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/code"
+fi
 
 # Set up our $PATH
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"

@@ -16,6 +16,10 @@ if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs" ]
 then
   DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
 fi
+if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/code" ]
+then
+  DRUPAL_ROOT="$PROJECT_BASE_DIR/code"
+fi
 
 DEFAULT_ENVIRONMENT_SCRIPT="$PROJECT_BASE_DIR/scripts/default-environment"
 if [ -f "$DEFAULT_ENVIRONMENT_SCRIPT" ]
