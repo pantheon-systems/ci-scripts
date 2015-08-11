@@ -98,7 +98,7 @@ then
 fi
 
 # Add vendor/bin, $HOME/bin and $HOME/.composer/vendor/bin to our $PATH
-export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$HOME/.composer/vendor/bin:$PATH"
+export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$HOME/terminus/vendor/bin:$PATH"
 
 # Do not attempt to push the site up to Pantheon unless the PPASS
 # environment variable is set.  If we receive a PR from an external
@@ -132,7 +132,12 @@ __EOF__
   CHECK_TERMINUS="$(which terminus)"
   if [ -z "$CHECK_TERMINUS" ]
   then
-    composer global require terminus/terminus
+    # Composer global require does not work, because Circle CI starts off
+    # with a global composer.json that requires phpunit 4.1.*, and Terminus
+    # requires 4.6 or later.  We'll make our own location for terminus installs.
+    mkdir -p $HOME/terminus
+    cd $HOME/terminus
+    composer require terminus/terminus
   fi
 
   # Set up Terminus and aliases, and wake up the site
