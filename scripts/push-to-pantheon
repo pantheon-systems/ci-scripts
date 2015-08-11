@@ -97,8 +97,8 @@ then
   PROJECT_BASE_DIR="$TRAVIS_BUILD_DIR"
 fi
 
-# Add vendor/bin and $HOME/bin to our $PATH
-export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
+# Add vendor/bin, $HOME/bin and $HOME/.composer/vendor/bin to our $PATH
+export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$HOME/.composer/vendor/bin:$PATH"
 
 # Do not attempt to push the site up to Pantheon unless the PPASS
 # environment variable is set.  If we receive a PR from an external
@@ -132,9 +132,7 @@ __EOF__
   CHECK_TERMINUS="$(which terminus)"
   if [ -z "$CHECK_TERMINUS" ]
   then
-    mkdir -p $HOME/bin
-    curl https://github.com/pantheon-systems/cli/releases/download/$_TERMINUS_VERSION/terminus.phar -L -o $HOME/bin/terminus
-    chmod +x $HOME/bin/terminus
+    composer global require terminus/terminus
   fi
 
   # Set up Terminus and aliases, and wake up the site
@@ -152,7 +150,7 @@ __EOF__
   echo "Wake up the site $PSITE"
   terminus site wake --site="$PSITE" --env="$PENV"
   check "Site wakeup successful" "Could not wake up site"
-  PUUID=$(terminus site info --site="$PSITE" --field=id)
+  PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null)
   aborterr "Could not get UUID for $PSITE"
 
   # Make sure we are in git mode
@@ -226,7 +224,7 @@ __EOF__
     # Check to see if we are having any bootstrap problems.
     if [ $? == 0 ]
     then
-      BOOTSTRAPPED=$(drush  --strict=0 @pantheon.$PSITE.$PENV status "Drupal bootstrap")
+      BOOTSTRAPPED=$(drush  --strict=0 @pantheon.$PSITE.$PENV status "Drupal bootstrap" 2>/dev/null)
     fi
     if [ $? != 0 ] || [ -z "$BOOTSTRAPPED" ]
     then
@@ -273,7 +271,7 @@ __EOF__
     aborterr "updatedb failed on Pantheon site"
   fi
 
-  SITE_URI=$(drush --strict=0 sa @pantheon.$PSITE.$PENV --format=csv --fields=uri)
+  SITE_URI=$(drush --strict=0 sa @pantheon.$PSITE.$PENV --format=csv --fields=uri 2>/dev/null)
   aborterr "Could not get URI for @pantheon.$PSITE.$PENV"
 
   # Try to curl the homepage, to give the system time to spin up
