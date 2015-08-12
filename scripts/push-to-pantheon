@@ -200,10 +200,6 @@ __EOF__
   # created when we did the local `drush site-install` prior to testing on
   # behat.  We'll remove it now, and replace it with some other settings.php
   # file.
-  if [ -z "$INSTALL_SITE" ]
-  then
-    INSTALL_SITE=false
-  fi
   chmod +w sites/default
   rm -f sites/default/settings.php
   aborterr "Could not remote built settings.php file."
@@ -248,7 +244,7 @@ __EOF__
   aborterr "'git push' failed"
 
   # If we created a settings.php file, then run 'site install'
-  if $INSTALL_SITE
+  if [ -n "$INSTALL_SITE" ]
   then
     # We need to go back to sftp mode to run site-install
     terminus site connection-mode --site="$PSITE" --env="$PENV" --set=sftp
@@ -272,7 +268,7 @@ __EOF__
     # with the code we just pushed.
     # n.b. If we wanted to re-run our behat tests on the pantheon site, then
     # we would probably want to install a fresh site every time.
-    drush --strict=0 @pantheon.$PSITE.$PENV updatedb
+    drush --strict=0 @pantheon.$PSITE.$PENV -y updatedb
     aborterr "updatedb failed on Pantheon site"
   fi
 
