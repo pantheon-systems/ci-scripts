@@ -65,6 +65,17 @@ function aborterr() {
 }
 
 #
+# If there is an environment variable defined that contains
+# a GitHub OAuth token, then tell Composer to use it.
+#
+# https://github.com/composer/composer/blob/master/doc/articles/troubleshooting.md#api-rate-limit-and-oauth-tokens
+#
+if [ -n "$GITHUB_OAUTH_TOKEN" ]
+then
+  composer config -g github-oauth.github.com "$GITHUB_OAUTH_TOKEN"
+fi
+
+#
 # Check the result of the last operation, and either print progress or call aborterr
 #
 # Usage:
@@ -132,7 +143,9 @@ __EOF__
   CHECK_TERMINUS="$(which terminus)"
   if [ -z "$CHECK_TERMINUS" ]
   then
-    # Composer global require does not work, because Circle CI starts off
+    # We install via Composer rather than using curl to fetch the phar
+    # because this way we always get the latest version.
+    # n.b. Composer global require does not work here, because Circle CI starts off
     # with a global composer.json that requires phpunit 4.1.*, and Terminus
     # requires 4.6 or later.  We'll make our own location for terminus installs.
     mkdir -p $HOME/terminus
