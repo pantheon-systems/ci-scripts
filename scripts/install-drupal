@@ -107,6 +107,7 @@ DRUSH_ALIAS="@$ALIAS_NAME_ONLY"
 
 # Create a local alias '@localtest' pointing at the local
 # site to test.
+mkdir -p "$HOME/.drush"
 cat << __EOF__ > "$HOME/.drush/$ALIAS_NAME_ONLY.alias.drushrc.php"
 <?php
 
