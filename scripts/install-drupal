@@ -86,20 +86,6 @@ then
   SITENAME_SUFFIX=" Circle CI Test Site"
 fi
 
-# Add in include of settings.local.php to the settings.php file.
-chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR"
-chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
-grep -q 'settings.local.php' "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
-if [ $? != 0 ]
-then
-  cat << __EOF__ >> "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
-\$local_settings = __DIR__ . "/settings.local.php";
-if (is_file(\$local_settings)) {
-  include "\$local_settings";
-}
-__EOF__
-fi
-
 # Get the alias name to use
 ALIAS_NAME_ONLY="${ALIAS:-${DEFAULT_ALIAS:-localtest}}"
 ALIAS_NAME_ONLY="${ALIAS_NAME_ONLY/@/}"
@@ -107,7 +93,6 @@ DRUSH_ALIAS="@$ALIAS_NAME_ONLY"
 
 # Create a local alias '@localtest' pointing at the local
 # site to test.
-mkdir -p "$HOME/.drush"
 cat << __EOF__ > "$HOME/.drush/$ALIAS_NAME_ONLY.alias.drushrc.php"
 <?php
 
@@ -134,6 +119,21 @@ if [ $? != 0 ]
 then
   echo "Could not install Drupal" >&2
   exit 1
+fi
+
+# Add in include of settings.local.php to the settings.php file.
+chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR"
+chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+echo  "test settings.php is $DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+grep -q 'settings.local.php' "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+if [ $? != 0 ]
+then
+  cat << __EOF__ >> "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+\$local_settings = __DIR__ . "/settings.local.php";
+if (is_file(\$local_settings)) {
+  include "\$local_settings";
+}
+__EOF__
 fi
 
 # If there is a local script 'install-configuration', then run it.
