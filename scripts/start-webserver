@@ -27,12 +27,17 @@ then
   source "$DEFAULT_ENVIRONMENT_SCRIPT"
 fi
 
+# What is the URI for the site we are testing?
+FALLBACK_URI="http://localhost:${PORT:-${DEFAULT_PORT:-8088}}"
+TESTURI="${URI:-${DEFAULT_URI:-$FALLBACK_URI}}"
+
 # Set up our $PATH
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$PATH"
 
 # Use Drush to spin up PHP's built-in webserver
 cd "$DRUPAL_ROOT"
-drush runserver --server=builtin ${PORT:-${DEFAULT_PORT:-8088}} --strict=0 </dev/null &>$HOME/server.log &
+echo drush runserver --uri="$TESTURI" --server=builtin --strict=0
+drush runserver --uri="$TESTURI" --server=builtin --strict=0 </dev/null &>$HOME/server.log &
 if [ $? != 0 ]
 then
   echo "Could not start php built-in webserver" >&2

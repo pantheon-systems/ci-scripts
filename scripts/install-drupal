@@ -42,11 +42,36 @@ then
   exit 1
 fi
 
-# Do the settings.php shuffle for an empty settings.php
-# This prevents permissions issues with the sites/default directory
-chmod +w $DRUPAL_ROOT/sites/default
-chmod +w $DRUPAL_ROOT/sites/default/settings.php
-cp $DRUPAL_ROOT/sites/default/default.settings.php $DRUPAL_ROOT/sites/default/settings.php
+# Figure out what URI we want to use.
+# Usually, it should be sufficient to just set PORT or
+# DEFAULT_PORT.  This must match with what is passed
+# to 'start-webserver'.
+FALLBACK_URI="http://localhost:${PORT:-${DEFAULT_PORT:-8088}}"
+TESTURI="${URI:-${DEFAULT_URI:-$FALLBACK_URI}}"
+
+TESTSITEDIR="${SITEDIR:-${DEFAULT_SITEDIR:-behat}}"
+
+# Prepare settings.php for installation
+mkdir -p "$DRUPAL_ROOT/sites/$TESTSITEDIR"
+chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR"
+rm -f "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+cp "$DRUPAL_ROOT/sites/default/default.settings.php" "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+
+# Set up a sites.php to point the Behat Drupal site port at the
+# Behat site directory that contains our testing settings.php.
+if [ ! -f "$DRUPAL_ROOT/sites/sites.php" ]
+then
+  echo '<?php' > "$DRUPAL_ROOT/sites/sites.php"
+fi
+grep -q "'${PORT:-${DEFAULT_PORT:-8088}}.localhost'" "$DRUPAL_ROOT/sites/sites.php"
+if [ $? != 0 ]
+then
+  cat << __EOF__ >> "$DRUPAL_ROOT/sites/sites.php"
+\$sites['${PORT:-${DEFAULT_PORT:-8088}}.localhost'] = '$TESTSITEDIR';
+\$sites['${PORT:-${DEFAULT_PORT:-8088}}.127.0.0.1'] = '$TESTSITEDIR';
+__EOF__
+fi
 
 # Set up some variables to match the environment
 FALLBACK_DBURL=mysql://root@localhost/drupal
@@ -61,23 +86,13 @@ then
   SITENAME_SUFFIX=" Circle CI Test Site"
 fi
 
-# Use Drush to install Drupal
-cd "$DRUPAL_ROOT"
-echo drush site-install -y "${PROFILE:-${DEFAULT_PROFILE:-standard}}" --site-name="${SITE_NAME:-${DEFAULT_SITE_NAME}}$SITENAME_SUFFIX" --db-url="${DBURL:-${DEFAULT_DBURL:-${FALLBACK_DBURL}}}" --account-name=${ACCOUNT:-${DEFAULT_ACCOUNT:-admin}} --account-pass=${PASSWORD:-${DEFAULT_PASSWORD:-admin}}
-drush site-install -y "${PROFILE:-${DEFAULT_PROFILE:-standard}}" --site-name="${SITE_NAME:-${DEFAULT_SITE_NAME}}$SITENAME_SUFFIX" --db-url="${DBURL:-${DEFAULT_DBURL:-${FALLBACK_DBURL}}}" --account-name=${ACCOUNT:-${DEFAULT_ACCOUNT:-admin}} --account-pass=${PASSWORD:-${DEFAULT_PASSWORD:-admin}}
-if [ $? != 0 ]
-then
-  echo "Could not install Drupal" >&2
-  exit 1
-fi
-
 # Add in include of settings.local.php to the settings.php file.
-chmod +w $DRUPAL_ROOT/sites/default
-chmod +w $DRUPAL_ROOT/sites/default/settings.php
-grep -q 'settings.local.php' "$DRUPAL_ROOT/sites/default/settings.php"
+chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR"
+chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
+grep -q 'settings.local.php' "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
 if [ $? != 0 ]
 then
-  cat << __EOF__ >> "$DRUPAL_ROOT/sites/default/settings.php"
+  cat << __EOF__ >> "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
 \$local_settings = __DIR__ . "/settings.local.php";
 if (is_file(\$local_settings)) {
   include "\$local_settings";
@@ -97,14 +112,34 @@ cat << __EOF__ > "$HOME/.drush/$ALIAS_NAME_ONLY.alias.drushrc.php"
 
 \$aliases['$ALIAS_NAME_ONLY'] = array(
   'root' => '$DRUPAL_ROOT',
-  'uri' => '${URI:-${DEFAULT_URI:-default}}',
+  'uri' => '$TESTURI',
 );
 __EOF__
+
+# If there is a local script 'prepare-install', then run it.
+PREPARE_INSTALL="$PROJECT_BASE_DIR/scripts/prepare-install"
+if [ -f "$PREPARE_INSTALL" ]
+then
+  cd "$DRUPAL_ROOT"
+  echo "$PREPARE_INSTALL" "$DRUSH_ALIAS"
+  "$PREPARE_INSTALL" "$DRUSH_ALIAS"
+fi
+
+# Use Drush to install Drupal
+cd "$DRUPAL_ROOT"
+echo drush site-install -y "${PROFILE:-${DEFAULT_PROFILE:-standard}}" --sites-subdir="$TESTSITEDIR" --site-name="${SITE_NAME:-${DEFAULT_SITE_NAME}}$SITENAME_SUFFIX" --db-url="${DBURL:-${DEFAULT_DBURL:-${FALLBACK_DBURL}}}" --account-name=${ACCOUNT:-${DEFAULT_ACCOUNT:-admin}} --account-pass=${PASSWORD:-${DEFAULT_PASSWORD:-admin}}
+drush site-install -y "${PROFILE:-${DEFAULT_PROFILE:-standard}}" --sites-subdir="$TESTSITEDIR" --site-name="${SITE_NAME:-${DEFAULT_SITE_NAME}}$SITENAME_SUFFIX" --db-url="${DBURL:-${DEFAULT_DBURL:-${FALLBACK_DBURL}}}" --account-name=${ACCOUNT:-${DEFAULT_ACCOUNT:-admin}} --account-pass=${PASSWORD:-${DEFAULT_PASSWORD:-admin}}
+if [ $? != 0 ]
+then
+  echo "Could not install Drupal" >&2
+  exit 1
+fi
 
 # If there is a local script 'install-configuration', then run it.
 INSTALL_CONFIGURATION="$PROJECT_BASE_DIR/scripts/install-configuration"
 if [ -f "$INSTALL_CONFIGURATION" ]
 then
+  cd "$DRUPAL_ROOT"
   echo "$INSTALL_CONFIGURATION" "$DRUSH_ALIAS"
   "$INSTALL_CONFIGURATION" "$DRUSH_ALIAS"
 fi
