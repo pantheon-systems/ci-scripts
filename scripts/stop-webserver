@@ -1,7 +1,17 @@
 #!/bin/bash
 
+SELF_DIRNAME="`dirname -- "$0"`"
+PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
+
+DEFAULT_ENVIRONMENT_SCRIPT="$PROJECT_BASE_DIR/scripts/default-environment"
+if [ -f "$DEFAULT_ENVIRONMENT_SCRIPT" ]
+then
+  source "$DEFAULT_ENVIRONMENT_SCRIPT"
+fi
+
+
 # Get the process ID of our webserver
-PID=$(ps auxw | grep '127.0.0.1[:]8088' | awk '{ print $2; }');
+PID=$(ps auxw | grep ":${PORT:-${DEFAULT_PORT:-8088}}" | grep ' -S ' | awk '{ print $2; }');
 
 # Kill our webserver, if it is running.
 if [ -n "$PID" ]
