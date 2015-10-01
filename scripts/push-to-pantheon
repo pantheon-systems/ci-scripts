@@ -172,8 +172,8 @@ __EOF__
   echo "Wake up the site $PSITE"
   terminus site wake --site="$PSITE" --env="$PENV"
   check "Site wakeup successful" "Could not wake up site"
-  PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null)
-  aborterr "Could not get UUID for $PSITE"
+  PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null | sed -e 's/^[^:]*: *//')
+  check "UUID for $PSITE is $PUUID" "Could not get UUID for $PSITE"
 
   # Make sure we are in git mode
   terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
