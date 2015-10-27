@@ -183,12 +183,21 @@ __EOF__
   git config --global user.email "$_CI_BOT_EMAIL"
   git config --global user.name "$_CI_BOT_NAME"
 
+  # Use the 'master' branch for the dev environment; for multidev,
+  # use the branch with the same name as the multidev environment name.
+  BRANCH=master
+  if [ "$PENV" != "dev" ]
+  then
+    BRANCH="$PENV"
+  fi
+
   # Clone the Pantheon repository into a separate directory, then
   # move the .git file to the location where we placed our composer targets
   cd $PROJECT_BASE_DIR
   REPO="ssh://codeserver.dev.$PUUID@codeserver.dev.$PUUID.drush.in:2222/~/repository.git"
-  git clone --depth 1 "$REPO" "$WORK_REPO"
+  git clone --depth 1 --branch "$BRANCH" "$REPO" "$WORK_REPO"
   check "git clone successful" "Could not clone repository from $REPO"
+
   # Get rid of any .git directories created by composer
   rm -rf $(find "$DRUPAL_ROOT" -name ".git")
   # Move the .git directory we checked out on top of the files we built.
@@ -257,7 +266,7 @@ __EOF__
   aborterr "'git add --all' failed"
   git commit -a -m "Built by CI: '$CI_COMMIT_MSG'"
   aborterr "'git commit' failed"
-  git push origin master
+  git push origin "$BRANCH"
   aborterr "'git push' failed"
 
   # If we created a settings.php file, then run 'site install'
