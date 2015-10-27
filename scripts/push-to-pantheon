@@ -186,7 +186,7 @@ __EOF__
   # Clone the Pantheon repository into a separate directory, then
   # move the .git file to the location where we placed our composer targets
   cd $PROJECT_BASE_DIR
-  REPO="ssh://codeserver.dev.$PUUID@codeserver.dev.$PUUID.drush.in:2222/~/repository.git"
+  REPO="ssh://codeserver.$PENV.$PUUID@codeserver.$PENV.$PUUID.drush.in:2222/~/repository.git"
   git clone --depth 1 "$REPO" "$WORK_REPO"
   check "git clone successful" "Could not clone repository from $REPO"
   # Get rid of any .git directories created by composer
