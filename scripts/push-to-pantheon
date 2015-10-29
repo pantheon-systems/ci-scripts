@@ -16,10 +16,10 @@
 #   PENV:  The environment of the site to push to (e.g. "dev")
 #   PEMAIL: The email address to log on to Pantheon with
 #   PPASS: The password to log on to Pantheon with
+#   SITEPASS: The password that should be set on the test site (Optional)
 #   CI_BOT_EMAIL: The email address to use in the git commit attribution
 #   CI_BOT_NAME: The name to use in the git commit attribution
 #   DRUSH_VERSION: The version of Drush to use on Pantheon
-#   TERMINUS_VERSION: The version of Terminus to download and use in this script
 #
 # It is also expected that there should be an SSH private key in
 # $HOME/.ssh that can be used to push code to the Pantheon git repository.
@@ -51,7 +51,7 @@ then
 fi
 
 # Directory where we will temporarily check out the pantheon site
-WORK_REPO="$HOME/pantheon-site"
+WORK_REPO="$HOME/pantheon-sites/$PSITE"
 
 #
 # Exit with a message if the previous function returned an error.
@@ -99,9 +99,6 @@ _CI_BOT_NAME="${CI_BOT_NAME:-CI Bot}"
 
 # If Drush version is not specified, then default to Drush 6
 _DRUSH_VERSION="${DRUSH_VERSION:-6}"
-
-# If Terminus version is not specified, then default to 0.5.5
-_TERMINUS_VERSION="${TERMINUS_VERSION:-0.5.5}"
 
 # If the CI provides us with an explicit build location (e.g. on Travis),
 # then we'll always believe that.  Otherwise, we'll stick with our base
@@ -154,7 +151,7 @@ __EOF__
     # requires 4.6 or later.  We'll make our own location for terminus installs.
     mkdir -p $HOME/terminus
     cd $HOME/terminus
-    composer require terminus/terminus
+    composer require pantheon-systems/cli
   fi
 
   # Set up Terminus and aliases, and wake up the site
@@ -176,7 +173,7 @@ __EOF__
   check "UUID for $PSITE is $PUUID" "Could not get UUID for $PSITE"
 
   # Make sure we are in git mode
-  terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
+  terminus site set-connection-mode --site="$PSITE" --env="$PENV" --mode=git
   check "Changed connection mode to 'git' for $PSITE $PENV environment" "Could not change connection mode to 'git' for $PSITE $PENV environment"
 
   # Identify the automation user
@@ -195,6 +192,8 @@ __EOF__
   # move the .git file to the location where we placed our composer targets
   cd $PROJECT_BASE_DIR
   REPO="ssh://codeserver.dev.$PUUID@codeserver.dev.$PUUID.drush.in:2222/~/repository.git"
+  mkdir -p "$(basename $WORK_REPO)"
+  rm -rf "$WORK_REPO"
   git clone --depth 1 --branch "$BRANCH" "$REPO" "$WORK_REPO"
   check "git clone successful" "Could not clone repository from $REPO"
 
@@ -273,7 +272,7 @@ __EOF__
   if [ -n "$INSTALL_SITE" ]
   then
     # We need to go back to sftp mode to run site-install
-    terminus site connection-mode --site="$PSITE" --env="$PENV" --set=sftp
+    terminus site set-connection-mode --site="$PSITE" --env="$PENV" --mode=sftp
     check "Changed connection mode to 'sftp' for $PSITE $PENV environment" "Could not change connection mode to 'sftp' for $PSITE $PENV environment"
     # Create a new site with site-install.
     drush --strict=0 @pantheon.$PSITE.$PENV -y site-install standard --site-name="$SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
@@ -281,13 +280,16 @@ __EOF__
     # Commit the modification made to settings.php and switch back to git mode
     terminus site code commit --site="$PSITE" --env="$PENV" --message="Settings.php modifications made by site-install" --yes
     aborterr "Could not commit settings.php changes"
-    terminus site connection-mode --site="$PSITE" --env="$PENV" --set=git
+    terminus site set-connection-mode --site="$PSITE" --env="$PENV" --mode=git
     aborterr "Could not switch back to git mode"
     # Because the site password is in the log, generate a new random
     # password for the site, and change it.  The site owner can use
     # `drush uli` to log in.
-    RANDPASS=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 )
-    drush --strict=0 @pantheon.$PSITE.$PENV user-password admin --password="$RANDPASS"
+    if [ -z "$SITEPASS" ]
+    then
+      SITEPASS=$(base64 /dev/urandom | tr -d '/+' | dd bs=32 count=1 2>/dev/null)
+    fi
+    drush --strict=0 @pantheon.$PSITE.$PENV user-password admin --password="$SITEPASS"
     aborterr "Could not reset password on Pantheon test site"
   else
     # If the database already exists, just run updatedb to bring it up-to-date
