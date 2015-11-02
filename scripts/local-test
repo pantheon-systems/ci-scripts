@@ -7,8 +7,29 @@
 # Installs a local Drupal site, runs it with `drush runserver`, executes
 # the behat tests, and then stops the webserver.
 #
-SELF_DIRNAME="`dirname -- "$0"`"
+# Tries to test with behat-local.yml, but tries to be a little bit
+# flexible about how the behat files are organized in the project.
+#
+SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
 
-$SELF_DIRNAME/setup-before-tests
-$SELF_DIRNAME/behat
-$SELF_DIRNAME/stop-webserver
+# Find the behat configuration directory
+for f in ../behat/behat-local.yml ../behat-local.yml ../behat.yml ; do
+  if [ -f "$SELF_DIRNAME/$f" ]
+  then
+    BEHAT_CONFIG="$SELF_DIRNAME/$f"
+    BEHAT_DIR=`dirname $BEHAT_CONFIG`
+    break;
+  fi
+done
+
+# Fail if the current project does not have a behat configuration directory
+if [ -z "$BEHAT_CONFIG" ]
+then
+  echo "Could not find any behat.local.yml or behat.yml file to test with." >&2
+  exit 1
+fi
+
+# Setup, run the tests, and then tear down.
+"$SELF_DIRNAME/setup-before-tests"
+cd "$BEHAT_DIR" && "$SELF_DIRNAME/behat" --config="$BEHAT_CONFIG"
+"$SELF_DIRNAME/stop-webserver"
