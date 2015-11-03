@@ -237,6 +237,9 @@ function pantheonpolicy_drush_sitealias_alter(&\$alias_record) {
 }
 __EOF__
 
+  # We need to clear the local Drush cache after defining a new policy file
+  drush cc drush
+
   # Capture the commit message
   export CI_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
 
