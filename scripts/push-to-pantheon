@@ -195,8 +195,8 @@ _CI_BOT_DOMAIN="${CI_BOT_DOMAIN:-${PEMAIL/*@/}}"
 _CI_BOT_EMAIL="${CI_BOT_EMAIL:-ci-bot@$_CI_BOT_DOMAIN}"
 _CI_BOT_NAME="${CI_BOT_NAME:-CI Bot}"
 
-# If Drush version is not specified, then default to Drush 6
-_DRUSH_VERSION="${DRUSH_VERSION:-6}"
+# If Drush version is not specified, then default to Drush 8
+_DRUSH_VERSION="${DRUSH_VERSION:-8}"
 
 # If the CI provides us with an explicit build location (e.g. on Travis),
 # then we'll always believe that.  Otherwise, we'll stick with our base
@@ -226,10 +226,10 @@ then
   # the CI server should use when running Drush commands remotely on Pantheon.
   # n.b. we still want to use drush8 for Drupal 8 sites
   mkdir -p "$HOME/.drush"
-  cat << __EOF__ > "$HOME/.drush/policy.drush.inc"
+  cat << __EOF__ > "$HOME/.drush/pantheonpolicy.drush.inc"
 <?php
 
-function policy_drush_sitealias_alter(&\$alias_record) {
+function pantheonpolicy_drush_sitealias_alter(&\$alias_record) {
   // Fix pantheon aliases!
   if (isset(\$alias_record['remote-host']) && (substr(\$alias_record['remote-host'], 0, 10) == 'appserver.')) {
     \$alias_record['path-aliases']['%drush-script'] = 'drush$_DRUSH_VERSION';
