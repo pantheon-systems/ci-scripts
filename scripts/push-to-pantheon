@@ -50,6 +50,46 @@ then
   DRUPAL_ROOT="`cd -P -- "$PROJECT_BASE_DIR/.." && pwd -P`"
 fi
 
+behat_config_file=
+
+#
+# Parse command line args
+#
+while [ $# -gt 0 ] ; do
+
+  option="$1"
+  shift
+
+  case "$option" in
+    --behat-config)
+      behat_config_file="$1"
+      shift
+      ;;
+
+    -*)
+      echo "Unknown option $option"
+      exit 1;
+      ;;
+
+    *)
+      echo "Parameters are not used; '$option' is invalid."
+      exit 1;
+      ;;
+  esac
+done
+
+# If either PSITE or PENV is empty, and we were not given
+# a behat configuration file, then look for the default
+# configuration file (behat/behat-pantheon.yml) and use that
+# if it is found.
+if [ -z "$PSITE" ] || [ -z "$PENV" ] && [ -z "$behat_config_file" ]
+then
+  if [ -f "$PROJECT_BASE_DIR/behat/behat-pantheon.yml" ]
+  then
+    behat_config_file="$PROJECT_BASE_DIR/behat/behat-pantheon.yml"
+  fi
+fi
+
 # Directory where we will temporarily check out the pantheon site
 WORK_REPO="$HOME/pantheon-sites/$PSITE"
 
@@ -67,6 +107,64 @@ function aborterr() {
     exit 1
   fi
 }
+
+# http://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e 's|\\||g' \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
+# If we were provided with a behat config file, then parse it
+# so that we can fetch configuration values from it.
+if [ -n "$behat_config_file" ]
+then
+  # Site URL:    $behat_conf_default_extensions_BehatMinkExtension_base_url
+  # Drush alias: $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias
+  eval $(parse_yaml $behat_config_file "behat_conf_")
+fi
+
+# Take the Site URI from the behat file, if it is given.  If it is
+# not given, then we will look it up via Terminus below.
+SITE_URI="$behat_conf_default_extensions_BehatMinkExtension_base_url"
+
+# The Drush alias in the behat config file will be in one of two
+# possible forms:
+#    @group.sitename.env
+#         or
+#    @sitename.env
+# If there is no "group", we will default to 'pantheon-ci'.
+ALIASGROUP='pantheon-circle'
+SITE_AND_ENV="$behat_conf_default_extensions_DrupalDrupalExtension_drush_alias"
+if [ -n "$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | grep '@[^.]\+\.[^.]\+\.[^.]\+')" ]
+then
+  ALIASGROUP="$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | sed -e 's/@\([^.]*\).*/\1/')"
+  SITE_AND_ENV="@$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | sed -e 's/@[^.]*\.//')"
+fi
+
+# If either PSITE or PENV is empty, and we have a Drush
+# alias in the behat file, then grab PSITE and PENV from
+# the alias.
+if [ -z "$PSITE" ] || [ -z "$PENV" ] && [ -n "$SITE_AND_ENV" ]
+then
+  PSITE=$(echo "$SITE_AND_ENV" | sed -e 's/@\([^.]*\).*/\1/')
+  PENV=$(echo "$SITE_AND_ENV" | sed -e 's/@[^.]*\.//')
+fi
+
+DRUSH_ALIAS="@$ALIASGROUP.$PSITE.$PENV"
+
 
 #
 # If there is an environment variable defined that contains
@@ -111,6 +209,8 @@ fi
 
 # Add vendor/bin, $HOME/bin and $HOME/.composer/vendor/bin to our $PATH
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$HOME/terminus/vendor/bin:$PATH"
+
+# Make the .drush directory, just in case it's not there.
 
 # Do not attempt to push the site up to Pantheon unless the PPASS
 # environment variable is set.  If we receive a PR from an external
@@ -163,8 +263,8 @@ __EOF__
   terminus auth login "$PEMAIL" --password="$PPASS" >/dev/null 2>&1
   check "Logged in to Pantheon via Terminus" "Could not log in to Pantheon with Terminus"
   echo "Fetch aliases via Terminus"
-  mkdir -p $HOME/.drush
-  terminus sites aliases
+  mkdir -p "$HOME/.drush"
+  terminus sites aliases --location="$HOME/.drush/$ALIASGROUP.aliases.drushrc.php"
   aborterr "Could not fetch aliases via Terminus"
   echo "Wake up the site $PSITE"
   terminus site wake --site="$PSITE" --env="$PENV"
@@ -246,11 +346,11 @@ __EOF__
     # Check to see if a pre-installed site is running okay.  If we
     # can't bootstrap Drupal, then we'll re-install
     echo "Drush status on the remote site:"
-    drush --strict=0 @pantheon.$PSITE.$PENV status
+    drush --strict=0 "$DRUSH_ALIAS" status
     # Check to see if we are having any bootstrap problems.
     if [ $? == 0 ]
     then
-      BOOTSTRAPPED=$(drush  --strict=0 @pantheon.$PSITE.$PENV status "Drupal bootstrap" 2>/dev/null)
+      BOOTSTRAPPED=$(drush  --strict=0 $DRUSH_ALIAS status "Drupal bootstrap" 2>/dev/null)
     fi
     if [ $? != 0 ] || [ -z "$BOOTSTRAPPED" ]
     then
@@ -275,7 +375,7 @@ __EOF__
     terminus site set-connection-mode --site="$PSITE" --env="$PENV" --mode=sftp
     check "Changed connection mode to 'sftp' for $PSITE $PENV environment" "Could not change connection mode to 'sftp' for $PSITE $PENV environment"
     # Create a new site with site-install.
-    drush --strict=0 @pantheon.$PSITE.$PENV -y site-install standard --site-name="$SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
+    drush --strict=0 $DRUSH_ALIAS -y site-install standard --site-name="$SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
     aborterr "Could not install Drupal on Pantheon test site"
     # Commit the modification made to settings.php and switch back to git mode
     terminus site code commit --site="$PSITE" --env="$PENV" --message="Settings.php modifications made by site-install" --yes
@@ -289,19 +389,24 @@ __EOF__
     then
       SITEPASS=$(base64 /dev/urandom | tr -d '/+' | dd bs=32 count=1 2>/dev/null)
     fi
-    drush --strict=0 @pantheon.$PSITE.$PENV user-password admin --password="$SITEPASS"
+    drush --strict=0 $DRUSH_ALIAS user-password admin --password="$SITEPASS"
     aborterr "Could not reset password on Pantheon test site"
   else
     # If the database already exists, just run updatedb to bring it up-to-date
     # with the code we just pushed.
     # n.b. If we wanted to re-run our behat tests on the pantheon site, then
     # we would probably want to install a fresh site every time.
-    drush --strict=0 @pantheon.$PSITE.$PENV -y updatedb
+    drush --strict=0 $DRUSH_ALIAS -y updatedb
     aborterr "updatedb failed on Pantheon site"
   fi
 
-  SITE_URI=$(drush --strict=0 sa @pantheon.$PSITE.$PENV --format=csv --fields=uri 2>/dev/null)
-  aborterr "Could not get URI for @pantheon.$PSITE.$PENV"
+  # If we were not given the site uri in a behat configuration file,
+  # then look it up via Terminus.
+  if [ -n "$SITE_URI" ]
+  then
+    SITE_URI=$(drush --strict=0 sa $DRUSH_ALIAS --format=csv --fields=uri 2>/dev/null)
+    aborterr "Could not get URI for $DRUSH_ALIAS"
+  fi
 
   # Try to curl the homepage, to give the system time to spin up
   curl --max-time 30 $SITE_URI &>/dev/null
