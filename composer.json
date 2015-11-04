@@ -12,12 +12,13 @@
     },
     "bin": [
         "scripts/disable-php-email",
-        "scripts/setup-before-tests",
+        "scripts/init-new-project",
         "scripts/install-drupal",
-        "scripts/start-webserver",
-        "scripts/wait-for-webserver",
+        "scripts/local-test",
         "scripts/push-to-pantheon",
+        "scripts/setup-before-tests",
+        "scripts/start-webserver",
         "scripts/stop-webserver",
-        "scripts/local-test"
+        "scripts/wait-for-webserver"
     ]
 }
