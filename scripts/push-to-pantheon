@@ -220,7 +220,11 @@ if [ -n "$PPASS" ]
 then
   # Dynamic hosts through Pantheon mean constantly checking interactively
   # that we mean to connect to an unknown host. We ignore those here.
-  echo "StrictHostKeyChecking no" > $HOME/.ssh/config
+  grep -q StrictHostKeyChecking "$HOME/.ssh/config"
+  if [ $? != 0 ]
+  then
+    echo "StrictHostKeyChecking no" >> "$HOME/.ssh/config"
+  fi
 
   # Create a local policy file that specifies the version of Drush that
   # the CI server should use when running Drush commands remotely on Pantheon.
