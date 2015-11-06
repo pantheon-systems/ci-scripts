@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Usage:
+#
+#   ./bin/pantheon-test
+#
+# Pushes the code for this site to a Pantheon instance and installs it,
+# and then runs the Behat tests against the remote site.
+#
+SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
+
+# Find the behat configuration directory
+for f in ../behat/behat-pantheon.yml ../behat-pantheon.yml ; do
+  if [ -f "$SELF_DIRNAME/$f" ]
+  then
+    BEHAT_CONFIG="$SELF_DIRNAME/$f"
+    BEHAT_DIR=`dirname $BEHAT_CONFIG`
+    break;
+  fi
+done
+
+# Fail if the current project does not have a behat configuration directory
+if [ -z "$BEHAT_CONFIG" ]
+then
+  echo "Could not find any behat-pantheon.yml file to test with." >&2
+  exit 1
+fi
+
+# To use this script, you can either set the environment variables
+# PEMAIL and PPASS, or you can manually log in via `terminus auth login`
+# prior to running this script.  Fail with an error if the user did
+# not do one of these things.
+if [ -z "$PEMAIL" ] || [ -z "$PPASS" ]
+then
+  terminus auth whoami >/dev/null 2>&1
+  if [ $? != 0 ]
+  then
+    echo "Log in first with `terminus auth login`" >&2
+    exit 1
+  fi
+fi
+
+# Copy to Pantheon and then run tests
+"$SELF_DIRNAME/push-to-pantheon" --autocreate
+cd "$BEHAT_DIR" && "$SELF_DIRNAME/behat" --config="$BEHAT_CONFIG"

@@ -11,23 +11,25 @@
 #
 # The specific environment variables we need are:
 #
-#   SITE_NAME: The human-readable name of the site to give to site-install
-#   PSITE: The name of the Pantheon site to push to
-#   PENV:  The environment of the site to push to (e.g. "dev")
-#   PEMAIL: The email address to log on to Pantheon with
-#   PPASS: The password to log on to Pantheon with
-#   SITEPASS: The password that should be set on the test site (Optional)
-#   CI_BOT_EMAIL: The email address to use in the git commit attribution
-#   CI_BOT_NAME: The name to use in the git commit attribution
-#   DRUSH_VERSION: The version of Drush to use on Pantheon
+#   SITE_NAME:     The human-readable name of the site to give to site-install.
+#                  Optional. Defaults to $PSITE.
+#   PSITE:         The name of the Pantheon site to push to.
+#                  Optional. Read from behat-pantheon.yml.
+#   PENV:          The environment of the site to push to (e.g. "dev")
+#                  Optional. Read from behat-pantheon.yml.
+#   PEMAIL:        The email address to log on to Pantheon with.
+#                  Optional. Alternately, use `terminus auth login` first.
+#   PPASS:         The password to log on to Pantheon with.
+#                  Optional. Alternately, use `terminus auth login` first.
+#   SITEPASS:      The password that should be set on the test site.
+#                  Optional. Defaults to a random string (use `drush uli`).
+#   CI_BOT_EMAIL:  The email address to use in the git commit attribution
+#   CI_BOT_NAME:   The name to use in the git commit attribution
+#   DRUSH_VERSION: The version of Drush to use on Pantheon.
+#                  Optional. Defaults to Drush 8.
 #
 # It is also expected that there should be an SSH private key in
 # $HOME/.ssh that can be used to push code to the Pantheon git repository.
-#
-# For specific configuration instructions, see:
-#
-#   https://github.com/pantheon-systems/travis-scripts
-#   https://github.com/pantheon-systems/circle-scripts
 #
 
 SELF_DIRNAME="`dirname -- "$0"`"
@@ -64,6 +66,10 @@ while [ $# -gt 0 ] ; do
     --behat-config)
       behat_config_file="$1"
       shift
+      ;;
+
+    --autocreate)
+      AUTOCREATE=true
       ;;
 
     -*)
@@ -165,6 +171,9 @@ fi
 
 DRUSH_ALIAS="@$ALIASGROUP.$PSITE.$PENV"
 
+_SITE_NAME="${SITE_NAME:-${DEFAULT_SITE_NAME:-${PSITE}}}"
+
+echo "Push to Pantheon $DRUSH_ALIAS"
 
 #
 # If there is an environment variable defined that contains
@@ -210,13 +219,24 @@ fi
 # Add vendor/bin, $HOME/bin and $HOME/.composer/vendor/bin to our $PATH
 export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$HOME/terminus/vendor/bin:$PATH"
 
-# Make the .drush directory, just in case it's not there.
+# If Terminus is not already in the $PATH, then we will install it later.
+CHECK_TERMINUS="$(which terminus)"
+
+# Check to see if we are already logged on via Terminus (but only if Terminus is installed).
+LOGGED_IN=0
+if [ -n "$CHECK_TERMINUS" ]
+then
+  terminus auth whoami >/dev/null 2>&1
+  terminus auth whoami
+  [ $? == 0 ] && LOGGED_IN=1
+fi
 
 # Do not attempt to push the site up to Pantheon unless the PPASS
 # environment variable is set.  If we receive a PR from an external
 # repository, then the secure environment variables will not be set;
 # if we test PRs, we cannot send them to Pantheon in this instance.
-if [ -n "$PPASS" ]
+# We will allow this to run if the user has already logged in, though.
+if [ -n "$PPASS" ] || [ $LOGGED_IN == 1 ]
 then
   # Dynamic hosts through Pantheon mean constantly checking interactively
   # that we mean to connect to an unknown host. We ignore those here.
@@ -248,7 +268,6 @@ __EOF__
   export CI_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
 
   # If Terminus is not already in the $PATH, then install it.
-  CHECK_TERMINUS="$(which terminus)"
   if [ -z "$CHECK_TERMINUS" ]
   then
     # We install via Composer rather than using curl to fetch the phar
@@ -261,31 +280,49 @@ __EOF__
     composer require katzgrau/klogger:dev-master pantheon-systems/cli
   fi
 
-  # Set up Terminus and aliases, and wake up the site
-  echo "Log in to Pantheon via Terminus"
-  # Redirect output when logging in.  Terminus prints the email address
-  # used during login to stdout, which will end up in the log.  It's better
-  # to conceal the email address used, to make it harder for a third party
-  # to try to log in via a brute-force password-guessing attack.
-  terminus auth login "$PEMAIL" --password="$PPASS" >/dev/null 2>&1
-  check "Logged in to Pantheon via Terminus" "Could not log in to Pantheon with Terminus"
+  if [ $LOGGED_IN == 0 ]
+  then
+    # Set up Terminus and aliases, and wake up the site
+    echo "Log in to Pantheon via Terminus"
+    # Redirect output when logging in.  Terminus prints the email address
+    # used during login to stdout, which will end up in the log.  It's better
+    # to conceal the email address used, to make it harder for a third party
+    # to try to log in via a brute-force password-guessing attack.
+    terminus auth login "$PEMAIL" --password="$PPASS" >/dev/null 2>&1
+    check "Logged in to Pantheon via Terminus" "Could not log in to Pantheon with Terminus"
+  fi
   echo "Fetch aliases via Terminus"
   mkdir -p "$HOME/.drush"
+  which terminus
+  PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null)
+  if [ -z "$PUUID" ] && [ -n $AUTOCREATE ]
+  then
+    terminus sites create --site="$PSITE" --label="$_SITE_NAME"
+    check "Created site $PSITE" "Could not create site $PSITE"
+  fi
+  if [ -z "$PUUID" ]
+  then
+    echo "Could not get UUID for $PSITE"
+    exit 1
+  fi
+  PUUID=$(echo $PUUID | sed -e 's/^[^:]*: *//')
+  echo "UUID for $PSITE is $PUUID"
   terminus sites aliases --location="$HOME/.drush/$ALIASGROUP.aliases.drushrc.php"
   aborterr "Could not fetch aliases via Terminus"
   echo "Wake up the site $PSITE"
   terminus site wake --site="$PSITE" --env="$PENV"
   check "Site wakeup successful" "Could not wake up site"
-  PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null | sed -e 's/^[^:]*: *//')
-  check "UUID for $PSITE is $PUUID" "Could not get UUID for $PSITE"
 
   # Make sure we are in git mode
   terminus site set-connection-mode --site="$PSITE" --env="$PENV" --mode=git
   check "Changed connection mode to 'git' for $PSITE $PENV environment" "Could not change connection mode to 'git' for $PSITE $PENV environment"
 
   # Identify the automation user
-  git config --global user.email "$_CI_BOT_EMAIL"
-  git config --global user.name "$_CI_BOT_NAME"
+  if [ -n "$CI" ]
+  then
+    git config --global user.email "$_CI_BOT_EMAIL"
+    git config --global user.name "$_CI_BOT_NAME"
+  fi
 
   # Use the 'master' branch for the dev environment; for multidev,
   # use the branch with the same name as the multidev environment name.
@@ -328,10 +365,9 @@ __EOF__
   git status
 
   # If there is no settings.php file on Pantheon, then we will create one.
-  # n.b. there is always a settings.php file in $TAVIS_BUILD_DIR; it was
-  # created when we did the local `drush site-install` prior to testing on
-  # behat.  We'll remove it now, and replace it with some other settings.php
-  # file.
+  # n.b. there may be a settings.php file on a CI server if we did a local
+  # test prior to the on-Pantheon test.  If so, we will remove it now, and
+  # replace it with some other settings.php file.
   chmod +w sites/default
   rm -f sites/default/settings.php
   aborterr "Could not remote built settings.php file."
@@ -382,7 +418,7 @@ __EOF__
     terminus site set-connection-mode --site="$PSITE" --env="$PENV" --mode=sftp
     check "Changed connection mode to 'sftp' for $PSITE $PENV environment" "Could not change connection mode to 'sftp' for $PSITE $PENV environment"
     # Create a new site with site-install.
-    drush --strict=0 $DRUSH_ALIAS -y site-install standard --site-name="$SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
+    drush --strict=0 $DRUSH_ALIAS -y site-install standard --site-name="$_SITE_NAME Pantheon Test Site" --account-name=admin --account-pass="[REDACTED]"
     aborterr "Could not install Drupal on Pantheon test site"
     # Commit the modification made to settings.php and switch back to git mode
     terminus site code commit --site="$PSITE" --env="$PENV" --message="Settings.php modifications made by site-install" --yes
