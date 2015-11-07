@@ -5,18 +5,19 @@
 # This script will push all of the generated build results created on a
 # CI server such as Travis or Circle to a Drupal site hosted on Pantheon.
 #
-# This script is designed only to be called by the CI server.  It relies
-# on special encrypted environment variables that must be set up in advance
-# to provide the credentials used to log in to the Pantheon dashboard.
+# This script may be called on the CI server, or locally. On the CI server,
+# environment variables are used to authenticate with Pantheon.  When used
+# locally, the script assumes that the user has already authenticated with
+# terminus before calling this script. The environment variables may also
+# be used locally, of course, but this is generally less convenient.
+#
+# This script will look for and parse a behat-pantheon.yml file to determine
+# which Pantheon site to copy to.
 #
 # The specific environment variables we need are:
 #
 #   SITE_NAME:     The human-readable name of the site to give to site-install.
 #                  Optional. Defaults to $PSITE.
-#   PSITE:         The name of the Pantheon site to push to.
-#                  Optional. Read from behat-pantheon.yml.
-#   PENV:          The environment of the site to push to (e.g. "dev")
-#                  Optional. Read from behat-pantheon.yml.
 #   PEMAIL:        The email address to log on to Pantheon with.
 #                  Optional. Alternately, use `terminus auth login` first.
 #   PPASS:         The password to log on to Pantheon with.
@@ -33,191 +34,9 @@
 #
 
 SELF_DIRNAME="`dirname -- "$0"`"
-PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
-DRUPAL_ROOT="$PROJECT_BASE_DIR/drupal"
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/web/sites" ]
-then
-  DRUPAL_ROOT="$PROJECT_BASE_DIR/web"
-fi
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs/sites" ]
-then
-  DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
-fi
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/code/sites" ]
-then
-  DRUPAL_ROOT="$PROJECT_BASE_DIR/code"
-fi
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/../sites" ] && [ -f "$PROJECT_BASE_DIR/../index.php" ]
-then
-  DRUPAL_ROOT="`cd -P -- "$PROJECT_BASE_DIR/.." && pwd -P`"
-fi
-
-behat_config_file=
-
-#
-# Parse command line args
-#
-while [ $# -gt 0 ] ; do
-
-  option="$1"
-  shift
-
-  case "$option" in
-    --behat-config)
-      behat_config_file="$1"
-      shift
-      ;;
-
-    --autocreate)
-      AUTOCREATE=true
-      ;;
-
-    -*)
-      echo "Unknown option $option"
-      exit 1;
-      ;;
-
-    *)
-      echo "Parameters are not used; '$option' is invalid."
-      exit 1;
-      ;;
-  esac
-done
-
-# If either PSITE or PENV is empty, and we were not given
-# a behat configuration file, then look for the default
-# configuration file (behat/behat-pantheon.yml) and use that
-# if it is found.
-if [ -z "$PSITE" ] || [ -z "$PENV" ] && [ -z "$behat_config_file" ]
-then
-  if [ -f "$PROJECT_BASE_DIR/behat/behat-pantheon.yml" ]
-  then
-    behat_config_file="$PROJECT_BASE_DIR/behat/behat-pantheon.yml"
-  fi
-fi
-
-# Directory where we will temporarily check out the pantheon site
-WORK_REPO="$HOME/pantheon-sites/$PSITE"
-
-#
-# Exit with a message if the previous function returned an error.
-#
-# Usage:
-#
-#   aborterr "Description of what went wrong"
-#
-function aborterr() {
-  if [ $? != 0 ]
-  then
-    echo "$1" >&2
-    exit 1
-  fi
-}
-
-# http://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script
-function parse_yaml {
-   local prefix=$2
-   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-   sed -ne "s|^\($s\):|\1|" \
-        -e 's|\\||g' \
-        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-   awk -F$fs '{
-      indent = length($1)/2;
-      vname[indent] = $2;
-      for (i in vname) {if (i > indent) {delete vname[i]}}
-      if (length($3) > 0) {
-         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
-      }
-   }'
-}
-
-# If we were provided with a behat config file, then parse it
-# so that we can fetch configuration values from it.
-if [ -n "$behat_config_file" ]
-then
-  # Site URL:    $behat_conf_default_extensions_BehatMinkExtension_base_url
-  # Drush alias: $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias
-  eval $(parse_yaml $behat_config_file "behat_conf_")
-fi
-
-# Take the Site URI from the behat file, if it is given.  If it is
-# not given, then we will look it up via Terminus below.
-SITE_URI="$behat_conf_default_extensions_BehatMinkExtension_base_url"
-
-# The Drush alias in the behat config file will be in one of two
-# possible forms:
-#    @group.sitename.env
-#         or
-#    @sitename.env
-# If there is no "group", we will default to 'pantheon-ci'.
-ALIASGROUP='pantheon-circle'
-SITE_AND_ENV="$behat_conf_default_extensions_DrupalDrupalExtension_drush_alias"
-if [ -n "$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | grep '@[^.]\+\.[^.]\+\.[^.]\+')" ]
-then
-  ALIASGROUP="$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | sed -e 's/@\([^.]*\).*/\1/')"
-  SITE_AND_ENV="@$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | sed -e 's/@[^.]*\.//')"
-fi
-
-# If either PSITE or PENV is empty, and we have a Drush
-# alias in the behat file, then grab PSITE and PENV from
-# the alias.
-if [ -z "$PSITE" ] || [ -z "$PENV" ] && [ -n "$SITE_AND_ENV" ]
-then
-  PSITE=$(echo "$SITE_AND_ENV" | sed -e 's/@\([^.]*\).*/\1/')
-  PENV=$(echo "$SITE_AND_ENV" | sed -e 's/@[^.]*\.//')
-fi
-
-DRUSH_ALIAS="@$ALIASGROUP.$PSITE.$PENV"
-
-_SITE_NAME="${SITE_NAME:-${DEFAULT_SITE_NAME:-${PSITE}}}"
+source $SELF_DIRNAME/setup-environment
 
 echo "Push to Pantheon $DRUSH_ALIAS"
-
-#
-# If there is an environment variable defined that contains
-# a GitHub OAuth token, then tell Composer to use it.
-#
-# https://github.com/composer/composer/blob/master/doc/articles/troubleshooting.md#api-rate-limit-and-oauth-tokens
-#
-if [ -n "$GITHUB_OAUTH_TOKEN" ]
-then
-  composer config -g github-oauth.github.com "$GITHUB_OAUTH_TOKEN"
-fi
-
-#
-# Check the result of the last operation, and either print progress or call aborterr
-#
-# Usage:
-#
-#   check "Something the script did" "Message to display if it did not work"
-#
-function check() {
-  aborterr "$2"
-  echo "$1"
-}
-
-# Provide default values for commit attribution if not
-# provided in enviornment variables.
-_CI_BOT_DOMAIN="${CI_BOT_DOMAIN:-${PEMAIL/*@/}}"
-_CI_BOT_EMAIL="${CI_BOT_EMAIL:-ci-bot@$_CI_BOT_DOMAIN}"
-_CI_BOT_NAME="${CI_BOT_NAME:-CI Bot}"
-
-# If Drush version is not specified, then default to Drush 8
-_DRUSH_VERSION="${DRUSH_VERSION:-8}"
-
-# If the CI provides us with an explicit build location (e.g. on Travis),
-# then we'll always believe that.  Otherwise, we'll stick with our base
-# assumption, which is that the project base dir is in the directory
-# above where this script is located (i.e. $PROJECT_BASE_DIR/bin/push-to-pantheon)
-if [ -n "$TRAVIS_BUILD_DIR" ]
-then
-  PROJECT_BASE_DIR="$TRAVIS_BUILD_DIR"
-fi
-
-# Add vendor/bin, $HOME/bin and $HOME/.composer/vendor/bin to our $PATH
-export PATH="$PROJECT_BASE_DIR/bin:$HOME/bin:$HOME/terminus/vendor/bin:$PATH"
 
 # If Terminus is not already in the $PATH, then we will install it later.
 CHECK_TERMINUS="$(which terminus)"
