@@ -17,6 +17,7 @@
         "scripts/local-test",
         "scripts/push-to-pantheon",
         "scripts/setup-before-tests",
+        "scripts/setup-environment",
         "scripts/start-webserver",
         "scripts/stop-webserver",
         "scripts/wait-for-webserver"
