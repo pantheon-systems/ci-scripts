@@ -115,7 +115,16 @@ if (is_file(\$local_settings)) {
 __EOF__
 fi
 
-# If there is a local script 'install-configuration', then run it.
+# If there is a local script 'post-install', then run it.
+POST_INSTALL="$PROJECT_BASE_DIR/scripts/post-install"
+if [ -f "$POST_INSTALL" ]
+then
+  cd "$DRUPAL_ROOT"
+  echo "$POST_INSTALL" "$DRUSH_ALIAS"
+  "$POST_INSTALL" "$DRUSH_ALIAS"
+fi
+
+# Deprecated: also run install-configuration (the old name for post-install).
 INSTALL_CONFIGURATION="$PROJECT_BASE_DIR/scripts/install-configuration"
 if [ -f "$INSTALL_CONFIGURATION" ]
 then
