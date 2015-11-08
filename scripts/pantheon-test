@@ -10,7 +10,7 @@
 SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
 
 # Set up our Drush alias, and do any custom pre-install tasks.
-$SELF_DIRNAME/prepare-to-install
+source $SELF_DIRNAME/prepare-to-install
 aborterr "Prepare-to-install script failed."
 
 # Find the behat configuration directory

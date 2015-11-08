@@ -8,8 +8,21 @@ SELF_DIRNAME="`dirname -- "$0"`"
 source $SELF_DIRNAME/setup-environment
 
 # Set up our Drush alias, and do any custom pre-install tasks.
-$SELF_DIRNAME/prepare-to-install
+source $SELF_DIRNAME/prepare-to-install
 aborterr "Prepare-to-install script failed."
+
+# Set up some variables to match the environment
+FALLBACK_DBURL=mysql://root@localhost/drupal
+SITENAME_SUFFIX=" Local CI Test Site"
+if [ -n "$TRAVIS" ]
+then
+  SITENAME_SUFFIX=" Travis CI Test Site"
+fi
+if [ -n "$CIRCLECI" ]
+then
+  FALLBACK_DBURL=mysql://ubuntu@127.0.0.1/circle_test
+  SITENAME_SUFFIX=" Circle CI Test Site"
+fi
 
 # Use Drush to install Drupal
 cd "$DRUPAL_ROOT"
