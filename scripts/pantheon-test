@@ -9,6 +9,10 @@
 #
 SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
 
+# Set up our Drush alias, and do any custom pre-install tasks.
+$SELF_DIRNAME/prepare-to-install
+aborterr "Prepare-to-install script failed."
+
 # Find the behat configuration directory
 for f in ../behat/behat-pantheon.yml ../behat-pantheon.yml ; do
   if [ -f "$SELF_DIRNAME/$f" ]
@@ -42,4 +46,6 @@ fi
 
 # Copy to Pantheon and then run tests
 "$SELF_DIRNAME/push-to-pantheon" --autocreate
+aborterr "Could not push site to Pantheon."
 cd "$BEHAT_DIR" && "$SELF_DIRNAME/behat" --config="$BEHAT_CONFIG"
+aborterr "Tests failed."

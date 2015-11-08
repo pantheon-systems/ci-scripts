@@ -30,6 +30,19 @@ then
 fi
 
 # Setup, run the tests, and then tear down.
-"$SELF_DIRNAME/setup-before-tests"
+$SELF_DIRNAME/install-drupal
+aborterr "Drupal installation failed."
+
+$SELF_DIRNAME/start-webserver
+aborterr "Could not start webserver."
+
+$SELF_DIRNAME/wait-for-webserver
 cd "$BEHAT_DIR" && "$SELF_DIRNAME/behat" --config="$BEHAT_CONFIG"
+testresults=$?
+
 "$SELF_DIRNAME/stop-webserver"
+if [ $testresults != 0 ]
+then
+  echo "Tests failed." >&2
+  exit 1
+fi

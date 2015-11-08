@@ -4,91 +4,12 @@
 #
 # Prepare a Drupal site to run the behat tests on.
 #
-
 SELF_DIRNAME="`dirname -- "$0"`"
 source $SELF_DIRNAME/setup-environment
 
-# Fix bug in our custom installer
-if [ -d $DRUPAL_ROOT/sites/sites/default ]
-then
-  mv $DRUPAL_ROOT/sites/sites/default $DRUPAL_ROOT/sites/default
-fi
-
-if [ ! -f $DRUPAL_ROOT/sites/default/default.settings.php ]
-then
-  echo "No default.settings.php file; did you run composer install?"
-  exit 1
-fi
-
-# Figure out what URI we want to use.
-# Usually, it should be sufficient to just set PORT or
-# DEFAULT_PORT.  This must match with what is passed
-# to 'start-webserver'.
-FALLBACK_URI="http://localhost:${PORT:-${DEFAULT_PORT:-8088}}"
-TESTURI="${URI:-${DEFAULT_URI:-$FALLBACK_URI}}"
-
-TESTSITEDIR="${SITEDIR:-${DEFAULT_SITEDIR:-behat}}"
-
-# Prepare settings.php for installation
-mkdir -p "$DRUPAL_ROOT/sites/$TESTSITEDIR"
-chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR"
-rm -f "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
-cp "$DRUPAL_ROOT/sites/default/default.settings.php" "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
-chmod +w "$DRUPAL_ROOT/sites/$TESTSITEDIR/settings.php"
-
-# Set up a sites.php to point the Behat Drupal site port at the
-# Behat site directory that contains our testing settings.php.
-if [ ! -f "$DRUPAL_ROOT/sites/sites.php" ]
-then
-  echo '<?php' > "$DRUPAL_ROOT/sites/sites.php"
-fi
-grep -q "'${PORT:-${DEFAULT_PORT:-8088}}.localhost'" "$DRUPAL_ROOT/sites/sites.php"
-if [ $? != 0 ]
-then
-  cat << __EOF__ >> "$DRUPAL_ROOT/sites/sites.php"
-\$sites['${PORT:-${DEFAULT_PORT:-8088}}.localhost'] = '$TESTSITEDIR';
-\$sites['${PORT:-${DEFAULT_PORT:-8088}}.127.0.0.1'] = '$TESTSITEDIR';
-__EOF__
-fi
-
-# Set up some variables to match the environment
-FALLBACK_DBURL=mysql://root@localhost/drupal
-SITENAME_SUFFIX=" Local CI Test Site"
-if [ -n "$TRAVIS" ]
-then
-  SITENAME_SUFFIX=" Travis CI Test Site"
-fi
-if [ -n "$CIRCLECI" ]
-then
-  FALLBACK_DBURL=mysql://ubuntu@127.0.0.1/circle_test
-  SITENAME_SUFFIX=" Circle CI Test Site"
-fi
-
-# Get the alias name to use
-ALIAS_NAME_ONLY="${ALIAS:-${DEFAULT_ALIAS:-localtest}}"
-ALIAS_NAME_ONLY="${ALIAS_NAME_ONLY/@/}"
-DRUSH_ALIAS="@$ALIAS_NAME_ONLY"
-
-# Create a local alias '@localtest' pointing at the local
-# site to test.
-mkdir -p "$HOME/.drush"
-cat << __EOF__ > "$HOME/.drush/$ALIAS_NAME_ONLY.alias.drushrc.php"
-<?php
-
-\$aliases['$ALIAS_NAME_ONLY'] = array(
-  'root' => '$DRUPAL_ROOT',
-  'uri' => '$TESTURI',
-);
-__EOF__
-
-# If there is a local script 'prepare-install', then run it.
-PREPARE_INSTALL="$PROJECT_BASE_DIR/scripts/prepare-install"
-if [ -f "$PREPARE_INSTALL" ]
-then
-  cd "$DRUPAL_ROOT"
-  echo "$PREPARE_INSTALL" "$DRUSH_ALIAS"
-  "$PREPARE_INSTALL" "$DRUSH_ALIAS"
-fi
+# Set up our Drush alias, and do any custom pre-install tasks.
+$SELF_DIRNAME/prepare-to-install
+aborterr "Prepare-to-install script failed."
 
 # Use Drush to install Drupal
 cd "$DRUPAL_ROOT"
@@ -120,8 +41,9 @@ POST_INSTALL="$PROJECT_BASE_DIR/scripts/post-install"
 if [ -f "$POST_INSTALL" ]
 then
   cd "$DRUPAL_ROOT"
-  echo "$POST_INSTALL" "$DRUSH_ALIAS"
-  "$POST_INSTALL" "$DRUSH_ALIAS"
+  echo "$POST_INSTALL" "$LOCAL_DRUSH_ALIAS"
+  "$POST_INSTALL" "$LOCAL_DRUSH_ALIAS"
+  aborterr "Post-install script failed"
 fi
 
 # Deprecated: also run install-configuration (the old name for post-install).
@@ -129,6 +51,7 @@ INSTALL_CONFIGURATION="$PROJECT_BASE_DIR/scripts/install-configuration"
 if [ -f "$INSTALL_CONFIGURATION" ]
 then
   cd "$DRUPAL_ROOT"
-  echo "$INSTALL_CONFIGURATION" "$DRUSH_ALIAS"
-  "$INSTALL_CONFIGURATION" "$DRUSH_ALIAS"
+  echo "$INSTALL_CONFIGURATION" "$LOCAL_DRUSH_ALIAS"
+  "$INSTALL_CONFIGURATION" "$LOCAL_DRUSH_ALIAS"
+  aborterr "Install-configuration script failed."
 fi

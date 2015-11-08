@@ -15,6 +15,7 @@
         "scripts/init-new-project",
         "scripts/install-drupal",
         "scripts/local-test",
+        "scripts/prepare-to-install",
         "scripts/push-to-pantheon",
         "scripts/setup-before-tests",
         "scripts/setup-environment",
