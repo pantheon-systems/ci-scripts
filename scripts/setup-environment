@@ -138,7 +138,7 @@ SITE_URI="$behat_conf_default_extensions_BehatMinkExtension_base_url"
 #         or
 #    @sitename.env
 # If there is no "group", we will default to 'pantheon-ci'.
-='pantheon-circle'
+ALIASGROUP='pantheon-circle'
 SITE_AND_ENV="$behat_conf_default_extensions_DrupalDrupalExtension_drush_alias"
 if [ -n "$(echo $behat_conf_default_extensions_DrupalDrupalExtension_drush_alias | grep '@[^.]\+\.[^.]\+\.[^.]\+')" ]
 then
