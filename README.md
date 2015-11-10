@@ -9,4 +9,4 @@ This project contains scripts useful for testing a Composer Drupal project with 
 
 All of this can be accomplished with only a few light files committed to your repository.
 
-See [travis-scripts](https://github.com/pantheon-systems/travis-scripts) and  [circle-scripts](https://github.com/pantheon-systems/circle-scripts) for specific instructions on how to use this project.
+See the [example Drupal 7 Circle CI Composer project](https://github.com/pantheon-systems/example-drupal7-circle-composer) for a specific template to use in getting started with these scripts.
