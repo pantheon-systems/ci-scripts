@@ -1,23 +1,13 @@
 #!/bin/bash
 
 PROJECT_BASE_DIR="`cd -P -- "$SELF_DIRNAME/.." && pwd -P`"
-DRUPAL_ROOT="$PROJECT_BASE_DIR/drupal"
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/web/sites" ]
-then
-  DRUPAL_ROOT="$PROJECT_BASE_DIR/web"
-fi
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/htdocs/sites" ]
-then
-  DRUPAL_ROOT="$PROJECT_BASE_DIR/htdocs"
-fi
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/code/sites" ]
-then
-  DRUPAL_ROOT="$PROJECT_BASE_DIR/code"
-fi
-if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/../sites" ] && [ -f "$PROJECT_BASE_DIR/../index.php" ]
-then
-  DRUPAL_ROOT="`cd -P -- "$PROJECT_BASE_DIR/.." && pwd -P`"
-fi
+DRUPAL_ROOT="$PROJECT_BASE_DIR/web"
+for location in docroot htdocs drupal code .. ; do
+  if [ ! -d "$DRUPAL_ROOT" ] && [ -d "$PROJECT_BASE_DIR/$location/sites" ] && [ -f "$PROJECT_BASE_DIR/$location/index.php" ]
+  then
+    DRUPAL_ROOT="`cd -P -- "$PROJECT_BASE_DIR/$location" && pwd -P`"
+  fi
+done
 
 # Load default environment values
 DEFAULT_ENVIRONMENT_SCRIPT="$PROJECT_BASE_DIR/scripts/default-environment"
