@@ -9,10 +9,6 @@
 #
 SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
 
-# Set up our Drush alias, and do any custom pre-install tasks.
-source $SELF_DIRNAME/prepare-to-install
-aborterr "Prepare-to-install script failed."
-
 # Find the behat configuration directory
 for f in ../behat/behat-pantheon.yml ../behat-pantheon.yml ; do
   if [ -f "$SELF_DIRNAME/$f" ]
@@ -29,6 +25,10 @@ then
   echo "Could not find any behat-pantheon.yml file to test with." >&2
   exit 1
 fi
+
+# Do any custom pre-install tasks.
+$SELF_DIRNAME/prepare-to-install
+aborterr "Prepare-to-install script failed."
 
 # To use this script, you can either set the environment variables
 # PEMAIL and PPASS, or you can manually log in via `terminus auth login`
