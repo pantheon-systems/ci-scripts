@@ -11,6 +11,7 @@
 # flexible about how the behat files are organized in the project.
 #
 SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
+source $SELF_DIRNAME/setup-environment
 
 # Find the behat configuration directory
 for f in ../behat/behat-local.yml ../behat-local.yml ../behat.yml ; do
