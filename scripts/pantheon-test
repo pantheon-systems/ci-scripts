@@ -8,6 +8,7 @@
 # and then runs the Behat tests against the remote site.
 #
 SELF_DIRNAME="$(cd $(dirname -- "$0") && pwd)"
+source $SELF_DIRNAME/setup-environment
 
 # Find the behat configuration directory
 for f in ../behat/behat-pantheon.yml ../behat-pantheon.yml ; do
