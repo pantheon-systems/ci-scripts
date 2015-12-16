@@ -110,14 +110,16 @@ __EOF__
     terminus auth login "$PEMAIL" --password="$PPASS" >/dev/null 2>&1
     check "Logged in to Pantheon via Terminus" "Could not log in to Pantheon with Terminus"
   fi
-  echo "Fetch aliases via Terminus"
+  echo "Check to see if Pantheon site $PSITE exists"
   mkdir -p "$HOME/.drush"
   which terminus
   PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null)
   if [ -z "$PUUID" ] && [ -n $AUTOCREATE ]
   then
+    echo "Creating site $PSITE"
     terminus sites create --site="$PSITE" --label="$_SITE_NAME"
     check "Created site $PSITE" "Could not create site $PSITE"
+    PUUID=$(terminus site info --site="$PSITE" --field=id 2>/dev/null)
   fi
   if [ -z "$PUUID" ]
   then
@@ -126,6 +128,7 @@ __EOF__
   fi
   PUUID=$(echo $PUUID | sed -e 's/^[^:]*: *//')
   echo "UUID for $PSITE is $PUUID"
+  echo "Fetch aliases via Terminus"
   terminus sites aliases --location="$HOME/.drush/$ALIASGROUP.aliases.drushrc.php"
   aborterr "Could not fetch aliases via Terminus"
   echo "Wake up the site $PSITE"

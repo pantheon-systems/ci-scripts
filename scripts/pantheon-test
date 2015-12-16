@@ -46,7 +46,7 @@ then
 fi
 
 # Copy to Pantheon and then run tests
-"$SELF_DIRNAME/push-to-pantheon" --autocreate
+"$SELF_DIRNAME/push-to-pantheon"
 aborterr "Could not push site to Pantheon."
 cd "$BEHAT_DIR" && "$SELF_DIRNAME/behat" --config="$BEHAT_CONFIG"
 aborterr "Tests failed."
