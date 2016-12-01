@@ -189,7 +189,7 @@ __EOF__
   # replace it with some other settings.php file.
   chmod +w sites/default
   rm -f sites/default/settings.php
-  aborterr "Could not remote built settings.php file."
+  aborterr "Could not remove built settings.php file."
   if [ ! -f "$WORK_REPO/sites/default/settings.php" ]
   then
     cp -f "$WORK_REPO/sites/default/default.settings.php" sites/default/settings.php
