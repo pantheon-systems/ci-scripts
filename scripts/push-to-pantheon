@@ -96,7 +96,7 @@ __EOF__
     # requires 4.6 or later.  We'll make our own location for terminus installs.
     mkdir -p $HOME/terminus
     cd $HOME/terminus
-    composer require katzgrau/klogger:dev-master pantheon-systems/cli
+    composer require pantheon-systems/terminus
   fi
 
   if [ $LOGGED_IN == 0 ]
